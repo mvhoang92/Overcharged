@@ -1,7 +1,7 @@
 # Overcharged: Trạm Sạc Bão Táp — Design Doc
 
 - **Ngày:** 2026-11-27
-- **Trạng thái:** Draft — chờ duyệt (MVP-first: backend/co-op/voucher hoãn lại, làm bản chơi được trước)
+- **Trạng thái:** Draft — chờ duyệt cuối (3D Three.js đã chốt; MVP-first: backend/co-op/voucher hoãn lại)
 - **Tác giả:** V-LLM (AI) cùng human partner
 - **Loại:** Project — design doc đầy đủ
 
@@ -50,14 +50,16 @@ Người chơi là nhân viên vận hành trạm trung chuyển xe điện: nh�
 
 ## 4. Approaches (đã chốt)
 
-### 4.1 Tech stack — Phaser 3 + TypeScript + Vite
+### 4.1 Tech stack — Three.js + TypeScript + Vite (3D thật)
+
+**Quyết định (2026-11-27): 3D thật, camera cố định góc Overcooked.** Gameplay vẫn trên mặt phẳng XZ; đồ họa là model 3D low-poly.
 
 | Phương án | Ưu | Nhược | Kết luận |
 |---|---|---|---|
-| Vanilla JS + Canvas | Siêu nhẹ | Tự build scene/input/audio/tween/collision → dev time x2-3 | Loại |
-| **Phaser 3 + TS** | Đủ đồ chơi, cộng đồng lớn, wrap Capacitor được nếu cần native sau này | ~300KB gzip | **Chốt** |
-| PixiJS | Renderer nhanh nhất | Chỉ render, tự làm game logic | Loại |
-| Unity / Godot | Native thật | Không share link được, build nặng | Loại (trái mục tiêu) |
+| Phaser 3 (2D) | Nhẹ, đã chứng minh | Không phải 3D thật | Loại (human chọn 3D) |
+| **Three.js + TS** | 3D thật, bundle nhẹ (~150KB core), chạy tốt mobile browser | Tự viết game logic, không có editor | **Chốt** |
+| Babylon.js | 3D đầy đủ hơn, có inspector | Core nặng hơn (~400KB+) | Dự phòng |
+| Unity / Godot WebGL | Editor mạnh | Bundle 15-30MB+, iOS Safari crash memory | Loại (giết share link) |
 
 ### 4.2 Backend — Supabase + Colyseus
 
@@ -166,15 +168,19 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 
 ## 6. Technical Architecture
 
-### 6.1 Client
+### 6.1 Client (Three.js)
 
-- Phaser 3.80+, TypeScript, Vite, Arcade Physics
+- Three.js + TypeScript + Vite; không physics engine — di chuyển mặt phẳng XZ + collision trụ/AABB tự viết
+- Camera: perspective, nhìn xuống ~55°, cố định (góc Overcooked)
 - Scenes: Boot → Preload → Menu → Lobby (co-op) → Game → UI (overlay) → Result
-- Entities: Player, Vehicle, Station (Intake/Wash/Charger/Accessory/Export), NPC
+- Entities: Player (GLB + AnimationMixer), Vehicle (GLB), Station (mesh + trigger), NPC
 - Systems: InputSystem, OrderSystem, ComboSystem, ChaosDirector, AudioManager, SaveManager
 - Data-driven: `vehicles.json`, `accessories.json`, `orders.json`, `levels.json`, `chaos.json`
-- Placeholder art: shape màu + emoji → thay bằng art final GĐ 4
-- Perf: object pooling, không allocate per-frame, texture atlas
+- Ánh sáng: ambient + directional, **không real-time shadow** trên mobile — blob shadow dưới chân
+- Perf: object pooling, không allocate per-frame, texture atlas 1024², GLB + Draco
+- Load: initial < 5MB, load theo màn nếu vượt
+- Placeholder: capsule/box màu → thay bằng model final GĐ 4
+- Fallback perf: pre-render model 3D thành sprite 2D (giữ chất 3D, quay về Phaser nếu cần)
 
 ### 6.2 Multiplayer (Colyseus)
 
@@ -209,18 +215,27 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 - **Secondary:** desktop Chrome/Firefox/Safari
 - Audio unlock on first touch (iOS), xử lý input quirks từng browser trong QA
 
-## 7. Roadmap (8 tuần, solo dev + AI)
+### 6.6 3D asset pipeline
+
+1. Concept 2D (đã có trong `docs/concepts/`) → AI image-to-3D (Meshy / Tripo / Rodin) → base mesh
+2. Blender 5.3 (đã cài): cleanup, UV, retopo nếu cần, export GLB
+3. Mixamo (tài khoản free, đã có): auto-rig + animation — walk 4 hướng, carry, idle, scrub
+4. Export GLB → Three.js
+- Nhân vật phải humanoid chuẩn để rig; skin đặc biệt (nón lá, áo dài) chỉ dùng cho skin sự kiện
+- Model low-poly 2-5k tris, texture atlas 1024²
+
+## 7. Roadmap (10-12 tuần, solo dev + AI, 3D)
 
 **Quyết định MVP-first (2026-11-27):** Giai đoạn hiện tại chỉ làm **MVP = bản chơi được, single-player, không backend, không co-op, không voucher**. Backend/co-op/voucher/marketing để sau khi MVP chạy ổn — scale sau.
 
 | GĐ | Tuần | Nội dung | Milestone |
 |---|---|---|---|
-| **MVP** | W1-2 | Core loop single-player: 1 map, 1 player, 2 xe, 4 trạm, joystick+action+dash, placeholder art | Link chơi được để playtest |
-| 2 | W3-4 | Phụ kiện, combo 5 sao, quá sạc VFX, chaos, 3 map, 3 xe, SFX, tutorial, VI/EN | Bản single-player đầy đủ |
-| 3 | W5-6 | Supabase (leaderboard/voucher/analytics), Colyseus co-op 2-4, lobby, room link | Co-op chạy được |
-| 4 | W7-8 | Art final + branding, animation, perf, QA thiết bị, OG card, soft launch | Launch |
+| **MVP** | W1-3 | Core loop single-player 3D: 1 map, 1 player (capsule placeholder), 2 xe, 4 trạm, joystick+action+dash, camera 3/4 | Link chơi được để playtest |
+| 2 | W4-6 | Phụ kiện, combo 5 sao, quá sạc VFX, chaos, 3 map, 3 xe, SFX, tutorial, VI/EN | Bản single-player đầy đủ |
+| 3 | W7-9 | Supabase (leaderboard/voucher/analytics), Colyseus co-op 2-4, lobby, room link | Co-op chạy được |
+| 4 | W10-12 | Model 3D final + rig + animation (Mixamo), branding, perf, QA thiết bị, OG card, soft launch | Launch |
 
-**Fallback:** co-op trượt deadline → launch single-player cuối W6, co-op bổ sung sau.
+**Fallback:** co-op trượt deadline → launch single-player cuối W9, co-op bổ sung sau. Perf 3D fail trên Android tầm trung → pre-render sprite 2D, quay về Phaser.
 
 **Sau MVP:** mới quyết voucher (giá trị + chống gian lận) và lưu lượng launch (sizing server).
 
@@ -233,3 +248,9 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 - **Lưu lượng launch dự kiến** — quyết định sizing server Colyseus/Supabase (chờ human partner)
 - Danh sách analytics event chốt
 - Port Zalo Mini App (post-launch, tùy chiến dịch)
+
+**Đề xuất chờ xác nhận (4 câu từ brainstorm):**
+1. Phí quá giờ: chỉ Wash + Charger (đề xuất) hay tất cả trạm
+2. Cao điểm + phí quá giờ: GĐ 2 (đề xuất) hay MVP
+3. Xe hỏng: GĐ 2 (đề xuất) hay GĐ 3
+4. Bus GĐ 3, Rocket GĐ 2 (đề xuất)

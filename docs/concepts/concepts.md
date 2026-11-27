@@ -1,5 +1,7 @@
 # Overcharged — Concept Design: Nhân vật, Map, Vật phẩm
 
+> **Cập nhật 2026-11-27:** Game chốt **3D thật (Three.js)**. Concept 2D trong doc này là reference cho bước image-to-3D — model 3D sẽ giữ đúng thiết kế nhân vật/vật phẩm/map ở đây.
+
 - **Ngày:** 2026-11-27
 - **Trạng thái:** Draft — chờ duyệt cùng spec
 - **Liên quan:** `docs/superpowers/specs/2026-11-27-overcharged-design.md`
