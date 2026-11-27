@@ -1,10 +1,10 @@
-# Overcharged MVP (Three.js) Implementation Plan
+# Overcharged MVP+ (Three.js) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Bản chơi được single-player 3D của Overcharged — nhận xe, rửa, sạc, xuất bến — chạy trên mobile browser landscape.
+**Goal:** Bản chơi được single-player 3D của Overcharged — nhập xe, rửa, sạc, nhặt khách/hàng từ băng chuyền, gắn lên xe, xuất chuyến — chạy trên mobile browser landscape.
 
-**Architecture:** Three.js + TypeScript + Vite. Logic thuần (VehicleStateMachine, OrderSystem, ScoreSystem, nearestWithin) nằm trong `src/core/`, test bằng Vitest, không import Three.js. Three.js layer (`game/`, `entities/`) chỉ render + input, gọi core. HUD và điều khiển cảm ứng dùng DOM overlay.
+**Architecture:** Three.js + TypeScript + Vite. Logic thuần (VehicleStateMachine, ConveyorSystem, ScoreSystem, ComboSystem, nearestWithin) nằm trong `src/core/`, test bằng Vitest, không import Three.js. Three.js layer (`game/`, `entities/`) chỉ render + input, gọi core. HUD và điều khiển cảm ứng dùng DOM overlay.
 
 **Tech Stack:** Three.js 0.170+, TypeScript 5.6, Vite 5.4, Vitest 2.1.
 
@@ -14,7 +14,7 @@
 
 - Mobile landscape, touch-first; keyboard WASD/arrows + Space/Shift fallback cho desktop dev
 - Placeholder 3D: capsule/box màu, không asset ngoài
-- Không backend, không co-op, không voucher, không combo (MVP)
+- Không backend, không co-op, không voucher (MVP+)
 - UI text tiếng Việt
 - 60fps target; không allocate object trong update loop
 - Data-driven: `src/data/vehicles.ts`, `src/data/levels.ts`
@@ -24,11 +24,12 @@
 ## Review Focus
 
 1. **Multi-touch đồng thời** (joystick + action + dash): ngón trượt ra ngoài vùng joystick không được mất input — Task 8 verification.
-2. **dt lớn khi tab background:** dirt/battery/overcharge clamp, penalty không double-count — Task 3 tests + Task 10 verification.
-3. **Order hết hạn cùng frame với fulfill:** fulfill sau update trả null — Task 4 test.
-4. **Action context giữa xe và trạm:** chọn mục tiêu gần nhất, ưu tiên trạm khi đang bưng xe — Task 5 + Task 9.
+2. **dt lớn khi tab background:** dirt/battery/overcharge/conveyor clamp, penalty không double-count — Task 3 + Task 4 + Task 10.
+3. **Conveyor overflow cùng frame với pickup:** take() sau update trả null — Task 4 test.
+4. **Action context:** ưu tiên trạm khi bưng xe; ưu tiên băng chuyền khi tay không — Task 9 + Task 11.
 5. **Clamp 0-100:** dirt/battery không âm/vượt — Task 3 tests.
-6. **Resize/orientation:** canvas + camera aspect cập nhật đúng khi xoay máy — Task 6 verification.
+6. **Combo reset đúng:** hất đơn reset streak, xuất chuyến tăng streak — Task 5 tests.
+7. **Resize/orientation:** canvas + camera aspect cập nhật đúng khi xoay máy — Task 6 verification.
 
 ---
 
@@ -207,15 +208,18 @@ git commit -m "chore: scaffold Three.js + TS + Vite + Vitest"
 - Create: `src/core/types.ts`, `src/config.ts`, `src/data/vehicles.ts`, `src/data/levels.ts`, `src/systems/EventBus.ts`
 
 **Interfaces:**
-- Produces: `VehicleType`, `VehicleLocation`, `VehicleState`, `StationType`, `VehicleDef`, `LevelDef`; `CONFIG`; `VEHICLES`; `LEVEL_1`; `bus` (EventBus instance với `on/off/emit`).
+- Produces: `VehicleType`, `VehicleLocation`, `VehicleState`, `StationType`, `EntityKind`, `EntityTier`, `VehicleReq`, `VehicleDef`, `LevelDef`; `CONFIG`; `VEHICLES`; `LEVEL_1`; `bus` (EventBus với `on/off/emit`).
 
 - [ ] **Step 1: Tạo `src/core/types.ts`**
 
 ```ts
 export type VehicleType = 'bike' | 'vf5';
 export type VehicleLocation = 'floor' | 'wash' | 'charger' | 'export' | 'carried' | 'exported';
-export type VehicleState = 'raw' | 'washing' | 'clean' | 'charging' | 'charged' | 'overcharged' | 'ready' | 'exported';
-export type StationType = 'intake' | 'wash' | 'charger' | 'export';
+export type VehicleState = 'raw' | 'washing' | 'clean' | 'charging' | 'charged' | 'overcharged' | 'loaded' | 'exported';
+export type StationType = 'intake' | 'wash' | 'charger' | 'conveyor' | 'export';
+export type EntityKind = 'customer' | 'goods';
+export type EntityTier = 'normal' | 'vip';
+export type VehicleReq = 'car' | 'bike';
 
 export interface VehicleDef {
   type: VehicleType;
@@ -223,14 +227,13 @@ export interface VehicleDef {
   color: number;
   basePoints: number;
   speedFactor: number;
+  req: VehicleReq;
 }
 
 export interface LevelDef {
   id: string;
   label: string;
   durationSec: number;
-  maxOrders: number;
-  patienceRange: [number, number];
   stations: Array<{ type: StationType; x: number; z: number }>;
 }
 ```
@@ -251,8 +254,14 @@ export const CONFIG = {
   intakeCooldownMs: 2000,
   interactionRange: 1.8,
   levelDurationSec: 120,
-  maxOrders: 3,
-  patienceRange: [60, 90] as [number, number],
+  conveyorSlots: 4,
+  conveyorShiftSec: 8,
+  comboMultipliers: [1, 1.5, 2, 3, 5],
+  vipMultiplier: 2,
+  missPenalty: 50,
+  trafficIntervalSec: 20,
+  trafficSpeed: 8,
+  trafficStunSec: 0.8,
   mapHalfWidth: 11.5,
   mapHalfDepth: 6.2,
 } as const;
@@ -264,8 +273,8 @@ export const CONFIG = {
 import type { VehicleDef, VehicleType } from '../core/types';
 
 export const VEHICLES: Record<VehicleType, VehicleDef> = {
-  bike: { type: 'bike', label: 'Bike', color: 0x2ecc71, basePoints: 100, speedFactor: 1.0 },
-  vf5: { type: 'vf5', label: 'VF 5 Taxi', color: 0x3498db, basePoints: 200, speedFactor: 0.9 },
+  bike: { type: 'bike', label: 'Bike', color: 0x2ecc71, basePoints: 100, speedFactor: 1.0, req: 'bike' },
+  vf5: { type: 'vf5', label: 'VF 5 Taxi', color: 0x3498db, basePoints: 200, speedFactor: 0.9, req: 'car' },
 };
 ```
 
@@ -278,12 +287,11 @@ export const LEVEL_1: LevelDef = {
   id: 'quan-1',
   label: 'Trạm Quận 1',
   durationSec: 120,
-  maxOrders: 3,
-  patienceRange: [60, 90],
   stations: [
     { type: 'intake', x: -9, z: -4.5 },
     { type: 'wash', x: -9, z: 4.5 },
     { type: 'charger', x: 0, z: -4.8 },
+    { type: 'conveyor', x: 9, z: 4.5 },
     { type: 'export', x: 9, z: -4.5 },
   ],
 };
@@ -335,8 +343,8 @@ git commit -m "feat: core types, config, data, event bus"
 - Test: `tests/VehicleStateMachine.test.ts`
 
 **Interfaces:**
-- Consumes: `VehicleType`, `VehicleLocation`, `VehicleState` từ `src/core/types.ts`; `CONFIG` từ `src/config.ts`.
-- Produces: `class VehicleStateMachine` với `type`, `dirt`, `battery`, `location`, `overchargeTimer`, `state`, `isOvercharged`, `canExport`, `scrub(dtSec)`, `placeOnCharger()`, `removeFromCharger()`, `update(dtSec)`.
+- Consumes: `VehicleType`, `VehicleLocation`, `VehicleState`, `VehicleReq`, `EntityTier` từ `src/core/types.ts`; `CONFIG` từ `src/config.ts`.
+- Produces: `class VehicleStateMachine` với `type`, `dirt`, `battery`, `location`, `overchargeTimer`, `loadedWith: { vehicleReq, tier } | null`, `state`, `isOvercharged`, `canExport`, `scrub(dtSec)`, `placeOnCharger()`, `removeFromCharger()`, `update(dtSec)`.
 
 - [ ] **Step 1: Viết failing test `tests/VehicleStateMachine.test.ts`**
 
@@ -345,10 +353,11 @@ import { describe, it, expect } from 'vitest';
 import { VehicleStateMachine } from '../src/core/VehicleStateMachine';
 
 describe('VehicleStateMachine', () => {
-  it('starts raw: dirt 100, battery 0', () => {
+  it('starts raw: dirt 100, battery 0, not loaded', () => {
     const v = new VehicleStateMachine('bike');
     expect(v.dirt).toBe(100);
     expect(v.battery).toBe(0);
+    expect(v.loadedWith).toBeNull();
     expect(v.state).toBe('raw');
   });
 
@@ -396,14 +405,16 @@ describe('VehicleStateMachine', () => {
     expect(v.isOvercharged).toBe(false);
   });
 
-  it('canExport requires clean + full battery', () => {
+  it('canExport requires clean + full battery + loaded', () => {
     const v = new VehicleStateMachine('bike');
-    expect(v.canExport).toBe(false);
     v.location = 'wash';
     v.scrub(10);
     v.placeOnCharger();
     v.update(10);
+    expect(v.canExport).toBe(false);
+    v.loadedWith = { vehicleReq: 'bike', tier: 'normal' };
     expect(v.canExport).toBe(true);
+    expect(v.state).toBe('loaded');
   });
 
   it('large dt does not overshoot values', () => {
@@ -427,7 +438,12 @@ Expected: FAIL — "Cannot find module '../src/core/VehicleStateMachine'".
 
 ```ts
 import { CONFIG } from '../config';
-import type { VehicleLocation, VehicleState, VehicleType } from './types';
+import type { EntityTier, VehicleLocation, VehicleReq, VehicleState, VehicleType } from './types';
+
+export interface LoadedInfo {
+  vehicleReq: VehicleReq;
+  tier: EntityTier;
+}
 
 export class VehicleStateMachine {
   readonly type: VehicleType;
@@ -435,6 +451,7 @@ export class VehicleStateMachine {
   battery = 0;
   location: VehicleLocation = 'floor';
   overchargeTimer = 0;
+  loadedWith: LoadedInfo | null = null;
   exported = false;
 
   constructor(type: VehicleType) {
@@ -447,7 +464,7 @@ export class VehicleStateMachine {
     if (this.location === 'charger' && this.battery < 100) return 'charging';
     if (this.isOvercharged) return 'overcharged';
     if (this.location === 'charger' && this.battery >= 100) return 'charged';
-    if (this.dirt === 0 && this.battery >= 100) return 'ready';
+    if (this.dirt === 0 && this.battery >= 100 && this.loadedWith) return 'loaded';
     if (this.dirt === 0) return 'clean';
     return 'raw';
   }
@@ -457,7 +474,7 @@ export class VehicleStateMachine {
   }
 
   get canExport(): boolean {
-    return this.dirt === 0 && this.battery >= 100 && !this.exported;
+    return this.dirt === 0 && this.battery >= 100 && this.loadedWith !== null && !this.exported;
   }
 
   scrub(dtSec: number): void {
@@ -501,158 +518,190 @@ Expected: PASS — 8 tests.
 
 ```bash
 git add tests/VehicleStateMachine.test.ts src/core/VehicleStateMachine.ts
-git commit -m "feat: vehicle state machine with wash/charge/overcharge"
+git commit -m "feat: vehicle state machine with wash/charge/overcharge/loaded"
 ```
 
 ---
 
-### Task 4: OrderSystem (TDD)
+### Task 4: ConveyorSystem (TDD)
 
 **Files:**
-- Create: `src/core/OrderSystem.ts`
-- Test: `tests/OrderSystem.test.ts`
+- Create: `src/core/ConveyorSystem.ts`
+- Test: `tests/ConveyorSystem.test.ts`
 
 **Interfaces:**
-- Consumes: `VehicleType` từ `src/core/types.ts`.
-- Produces: `interface Order { id, vehicleType, patience, maxPatience }`; `class OrderSystem` với `orders`, `update(dtSec): Order[]`, `tryFulfill(vehicleType): Order | null`, `fill()`.
+- Consumes: `EntityKind`, `EntityTier`, `VehicleReq` từ `src/core/types.ts`.
+- Produces: `interface ConveyorEntity { id, kind, tier, vehicleReq, slot }`; `class ConveyorSystem` với `entities`, `update(dtSec): ConveyorEntity[]` (trả về entity bị tràn), `take(id): ConveyorEntity | null`, `fill()`.
 
-- [ ] **Step 1: Viết failing test `tests/OrderSystem.test.ts`**
+- [ ] **Step 1: Viết failing test `tests/ConveyorSystem.test.ts`**
 
 ```ts
 import { describe, it, expect } from 'vitest';
-import { OrderSystem } from '../src/core/OrderSystem';
+import { ConveyorSystem } from '../src/core/ConveyorSystem';
 
-const opts = { maxOrders: 3, patienceRange: [10, 10] as [number, number], random: () => 0 };
+const opts = { slots: 3, shiftIntervalSec: 1, random: () => 0 };
 
-describe('OrderSystem', () => {
-  it('fill spawns up to maxOrders', () => {
-    const os = new OrderSystem(opts);
-    os.fill();
-    expect(os.orders.length).toBe(3);
+describe('ConveyorSystem', () => {
+  it('fill spawns one entity at slot 0', () => {
+    const c = new ConveyorSystem(opts);
+    c.fill();
+    expect(c.entities.length).toBe(1);
+    expect(c.entities[0].slot).toBe(0);
   });
 
-  it('update decrements patience and removes expired', () => {
-    const os = new OrderSystem({ ...opts, maxOrders: 1 });
-    os.fill();
-    const expired = os.update(11);
-    expect(expired.length).toBe(1);
-    expect(os.orders.length).toBe(0);
+  it('fill does not spawn when slot 0 is occupied', () => {
+    const c = new ConveyorSystem(opts);
+    c.fill();
+    c.fill();
+    expect(c.entities.length).toBe(1);
   });
 
-  it('tryFulfill matches by type and removes order', () => {
-    const os = new OrderSystem({ ...opts, maxOrders: 1 });
-    os.fill();
-    const order = os.tryFulfill('bike');
-    expect(order).not.toBeNull();
-    expect(order!.vehicleType).toBe('bike');
-    expect(os.orders.length).toBe(0);
+  it('update shifts entities after shiftInterval', () => {
+    const c = new ConveyorSystem(opts);
+    c.fill();
+    c.update(0.5);
+    expect(c.entities[0].slot).toBe(0);
+    c.update(0.6);
+    expect(c.entities[0].slot).toBe(1);
   });
 
-  it('tryFulfill returns null when no match', () => {
-    const os = new OrderSystem({ ...opts, maxOrders: 1 });
-    os.fill();
-    expect(os.tryFulfill('vf5')).toBeNull();
+  it('entity overflowing last slot is returned and removed', () => {
+    const c = new ConveyorSystem(opts);
+    c.fill();
+    c.update(1);
+    c.update(1);
+    const overflow = c.update(1);
+    expect(overflow.length).toBe(1);
+    expect(c.entities.length).toBe(0);
   });
 
-  it('expired order cannot be fulfilled', () => {
-    const os = new OrderSystem({ ...opts, maxOrders: 1, patienceRange: [1, 1] });
-    os.fill();
-    os.update(2);
-    expect(os.tryFulfill('bike')).toBeNull();
+  it('take removes entity by id', () => {
+    const c = new ConveyorSystem(opts);
+    c.fill();
+    const id = c.entities[0].id;
+    expect(c.take(id)).not.toBeNull();
+    expect(c.take(id)).toBeNull();
+    expect(c.entities.length).toBe(0);
+  });
+
+  it('putBack returns entity to slot 0', () => {
+    const c = new ConveyorSystem(opts);
+    c.fill();
+    const entity = c.take(c.entities[0].id)!;
+    c.putBack(entity);
+    expect(c.entities.length).toBe(1);
+    expect(c.entities[0].slot).toBe(0);
+  });
+
+  it('spawns deterministic kind/tier/req from random', () => {
+    const c = new ConveyorSystem({ ...opts, random: () => 0.1 });
+    c.fill();
+    expect(c.entities[0].kind).toBe('customer');
+    expect(c.entities[0].tier).toBe('vip');
+    expect(c.entities[0].vehicleReq).toBe('car');
   });
 });
 ```
 
 - [ ] **Step 2: Chạy test để xác nhận fail**
 
-Run: `npx vitest run tests/OrderSystem.test.ts`
-Expected: FAIL — "Cannot find module '../src/core/OrderSystem'".
+Run: `npx vitest run tests/ConveyorSystem.test.ts`
+Expected: FAIL — "Cannot find module '../src/core/ConveyorSystem'".
 
-- [ ] **Step 3: Implement `src/core/OrderSystem.ts`**
+- [ ] **Step 3: Implement `src/core/ConveyorSystem.ts`**
 
 ```ts
-import type { VehicleType } from './types';
+import type { EntityKind, EntityTier, VehicleReq } from './types';
 
-export interface Order {
+export interface ConveyorEntity {
   id: number;
-  vehicleType: VehicleType;
-  patience: number;
-  maxPatience: number;
+  kind: EntityKind;
+  tier: EntityTier;
+  vehicleReq: VehicleReq;
+  slot: number;
 }
 
-export interface OrderSystemOpts {
-  maxOrders: number;
-  patienceRange: [number, number];
+export interface ConveyorOpts {
+  slots: number;
+  shiftIntervalSec: number;
   random?: () => number;
 }
 
-export class OrderSystem {
-  private list: Order[] = [];
+export class ConveyorSystem {
+  private list: ConveyorEntity[] = [];
   private nextId = 1;
-  private readonly opts: OrderSystemOpts;
+  private shiftTimer = 0;
+  private readonly opts: ConveyorOpts;
   private readonly random: () => number;
 
-  constructor(opts: OrderSystemOpts) {
+  constructor(opts: ConveyorOpts) {
     this.opts = opts;
     this.random = opts.random ?? Math.random;
   }
 
-  get orders(): readonly Order[] {
+  get entities(): readonly ConveyorEntity[] {
     return this.list;
   }
 
   fill(): void {
-    while (this.list.length < this.opts.maxOrders) {
-      const [min, max] = this.opts.patienceRange;
-      const patience = min + this.random() * (max - min);
-      const vehicleType: VehicleType = this.random() < 0.6 ? 'bike' : 'vf5';
-      this.list.push({ id: this.nextId++, vehicleType, patience, maxPatience: patience });
-    }
+    if (this.list.some((e) => e.slot === 0)) return;
+    const kind: EntityKind = this.random() < 0.5 ? 'customer' : 'goods';
+    const tier: EntityTier = this.random() < 0.25 ? 'vip' : 'normal';
+    const vehicleReq: VehicleReq = this.random() < 0.5 ? 'car' : 'bike';
+    this.list.push({ id: this.nextId++, kind, tier, vehicleReq, slot: 0 });
   }
 
-  update(dtSec: number): Order[] {
-    const expired: Order[] = [];
-    this.list = this.list.filter((o) => {
-      o.patience -= dtSec;
-      if (o.patience <= 0) {
-        expired.push(o);
+  update(dtSec: number): ConveyorEntity[] {
+    this.shiftTimer += dtSec;
+    if (this.shiftTimer < this.opts.shiftIntervalSec) return [];
+    this.shiftTimer -= this.opts.shiftIntervalSec;
+    for (const e of this.list) e.slot += 1;
+    const overflow: ConveyorEntity[] = [];
+    this.list = this.list.filter((e) => {
+      if (e.slot >= this.opts.slots) {
+        overflow.push(e);
         return false;
       }
       return true;
     });
-    return expired;
+    return overflow;
   }
 
-  tryFulfill(vehicleType: VehicleType): Order | null {
-    const idx = this.list.findIndex((o) => o.vehicleType === vehicleType);
+  take(id: number): ConveyorEntity | null {
+    const idx = this.list.findIndex((e) => e.id === id);
     if (idx === -1) return null;
     return this.list.splice(idx, 1)[0];
+  }
+
+  putBack(entity: ConveyorEntity): void {
+    entity.slot = 0;
+    this.list.push(entity);
   }
 }
 ```
 
 - [ ] **Step 4: Chạy test để xác nhận pass**
 
-Run: `npx vitest run tests/OrderSystem.test.ts`
-Expected: PASS — 5 tests.
+Run: `npx vitest run tests/ConveyorSystem.test.ts`
+Expected: PASS — 7 tests.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add tests/OrderSystem.test.ts src/core/OrderSystem.ts
-git commit -m "feat: order queue with patience and fulfillment"
+git add tests/ConveyorSystem.test.ts src/core/ConveyorSystem.ts
+git commit -m "feat: conveyor system with slots, shift and overflow"
 ```
 
 ---
 
-### Task 5: ScoreSystem + interaction helper (TDD)
+### Task 5: ScoreSystem + ComboSystem + interaction (TDD)
 
 **Files:**
-- Create: `src/core/ScoreSystem.ts`, `src/core/interaction.ts`
-- Test: `tests/ScoreSystem.test.ts`, `tests/interaction.test.ts`
+- Create: `src/core/ScoreSystem.ts`, `src/core/ComboSystem.ts`, `src/core/interaction.ts`
+- Test: `tests/ScoreSystem.test.ts`, `tests/ComboSystem.test.ts`, `tests/interaction.test.ts`
 
 **Interfaces:**
-- Produces: `class ScoreSystem` với `score`, `addDelivery(basePoints)`, `addPenalty(pointsPerSec, dtSec)`; `nearestWithin<T extends Point>(from, items, range): T | null`.
+- Produces: `class ScoreSystem` với `score`, `addDelivery(points)`, `addPenalty(pointsPerSec, dtSec)`; `class ComboSystem` với `streak`, `multiplier`, `onDelivery()`, `onMiss()`; `nearestWithin<T extends Point>(from, items, range): T | null`.
 
 - [ ] **Step 1: Viết failing test `tests/ScoreSystem.test.ts`**
 
@@ -661,7 +710,7 @@ import { describe, it, expect } from 'vitest';
 import { ScoreSystem } from '../src/core/ScoreSystem';
 
 describe('ScoreSystem', () => {
-  it('addDelivery adds base points', () => {
+  it('addDelivery adds points', () => {
     const s = new ScoreSystem();
     s.addDelivery(100);
     expect(s.score).toBe(100);
@@ -682,7 +731,49 @@ describe('ScoreSystem', () => {
 });
 ```
 
-- [ ] **Step 2: Viết failing test `tests/interaction.test.ts`**
+- [ ] **Step 2: Viết failing test `tests/ComboSystem.test.ts`**
+
+```ts
+import { describe, it, expect } from 'vitest';
+import { ComboSystem } from '../src/core/ComboSystem';
+
+describe('ComboSystem', () => {
+  it('starts at multiplier 1', () => {
+    const c = new ComboSystem();
+    expect(c.streak).toBe(0);
+    expect(c.multiplier).toBe(1);
+  });
+
+  it('multiplier grows with streak', () => {
+    const c = new ComboSystem();
+    c.onDelivery();
+    expect(c.multiplier).toBe(1.5);
+    c.onDelivery();
+    expect(c.multiplier).toBe(2);
+    c.onDelivery();
+    expect(c.multiplier).toBe(3);
+    c.onDelivery();
+    expect(c.multiplier).toBe(5);
+  });
+
+  it('multiplier caps at 5', () => {
+    const c = new ComboSystem();
+    for (let i = 0; i < 10; i++) c.onDelivery();
+    expect(c.multiplier).toBe(5);
+  });
+
+  it('miss resets streak', () => {
+    const c = new ComboSystem();
+    c.onDelivery();
+    c.onDelivery();
+    c.onMiss();
+    expect(c.streak).toBe(0);
+    expect(c.multiplier).toBe(1);
+  });
+});
+```
+
+- [ ] **Step 3: Viết failing test `tests/interaction.test.ts`**
 
 ```ts
 import { describe, it, expect } from 'vitest';
@@ -709,19 +800,19 @@ describe('nearestWithin', () => {
 });
 ```
 
-- [ ] **Step 3: Chạy test để xác nhận fail**
+- [ ] **Step 4: Chạy test để xác nhận fail**
 
-Run: `npx vitest run tests/ScoreSystem.test.ts tests/interaction.test.ts`
+Run: `npx vitest run tests/ScoreSystem.test.ts tests/ComboSystem.test.ts tests/interaction.test.ts`
 Expected: FAIL — "Cannot find module".
 
-- [ ] **Step 4: Implement `src/core/ScoreSystem.ts`**
+- [ ] **Step 5: Implement `src/core/ScoreSystem.ts`**
 
 ```ts
 export class ScoreSystem {
   score = 0;
 
-  addDelivery(basePoints: number): void {
-    this.score += basePoints;
+  addDelivery(points: number): void {
+    this.score += points;
   }
 
   addPenalty(pointsPerSec: number, dtSec: number): void {
@@ -730,7 +821,30 @@ export class ScoreSystem {
 }
 ```
 
-- [ ] **Step 5: Implement `src/core/interaction.ts`**
+- [ ] **Step 6: Implement `src/core/ComboSystem.ts`**
+
+```ts
+import { CONFIG } from '../config';
+
+export class ComboSystem {
+  streak = 0;
+
+  get multiplier(): number {
+    const tiers = CONFIG.comboMultipliers;
+    return tiers[Math.min(this.streak, tiers.length - 1)];
+  }
+
+  onDelivery(): void {
+    this.streak += 1;
+  }
+
+  onMiss(): void {
+    this.streak = 0;
+  }
+}
+```
+
+- [ ] **Step 7: Implement `src/core/interaction.ts`**
 
 ```ts
 export interface Point {
@@ -752,16 +866,16 @@ export function nearestWithin<T extends Point>(from: Point, items: T[], range: n
 }
 ```
 
-- [ ] **Step 6: Chạy test để xác nhận pass**
+- [ ] **Step 8: Chạy test để xác nhận pass**
 
-Run: `npx vitest run tests/ScoreSystem.test.ts tests/interaction.test.ts`
-Expected: PASS — 7 tests.
+Run: `npx vitest run tests/ScoreSystem.test.ts tests/ComboSystem.test.ts tests/interaction.test.ts`
+Expected: PASS — 11 tests.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add tests/ScoreSystem.test.ts tests/interaction.test.ts src/core/ScoreSystem.ts src/core/interaction.ts
-git commit -m "feat: score system and nearest-target interaction"
+git add tests/ScoreSystem.test.ts tests/ComboSystem.test.ts tests/interaction.test.ts src/core/ScoreSystem.ts src/core/ComboSystem.ts src/core/interaction.ts
+git commit -m "feat: score, combo and nearest-target interaction"
 ```
 
 ---
@@ -882,6 +996,7 @@ const STATION_STYLE: Record<StationType, { color: number; label: string }> = {
   intake: { color: 0x2ecc71, label: 'NHẬP XE' },
   wash: { color: 0x00bcd4, label: 'RỬA XE' },
   charger: { color: 0xf1c40f, label: 'SẠC V-GREEN' },
+  conveyor: { color: 0x9b59b6, label: 'BĂNG CHUYỀN' },
   export: { color: 0xe74c3c, label: 'XUẤT BẾN' },
 };
 
@@ -947,7 +1062,7 @@ game.start();
 - [ ] **Step 5: Verify world + resize**
 
 Run: `npm run dev`
-Expected: thấy mặt phẳng 3D + 4 trạm có pad màu và label (NHẬP XE / RỬA XE / SẠC V-GREEN / XUẤT BẾN); xoay ngang/dọc cửa sổ → canvas + camera aspect cập nhật đúng, không méo.
+Expected: thấy mặt phẳng 3D + 5 trạm có pad màu và label (NHẬP XE / RỬA XE / SẠC V-GREEN / BĂNG CHUYỀN / XUẤT BẾN); xoay ngang/dọc cửa sổ → canvas + camera aspect cập nhật đúng, không méo.
 
 - [ ] **Step 6: Commit**
 
@@ -961,16 +1076,16 @@ git commit -m "feat: three.js world, camera, lights, stations"
 ### Task 7: Player + camera-relative movement + dash
 
 **Files:**
-- Create: `src/entities/Player.ts`
+- Create: `src/systems/InputSystem.ts` (stub), `src/entities/Player.ts`
 - Modify: `src/game/Game.ts`
 
 **Interfaces:**
-- Consumes: `CONFIG` từ `src/config.ts`; `InputState` từ `src/systems/InputSystem.ts` (Task 8).
-- Produces: `class Player` với `mesh`, `carrying: Vehicle | null`, `position`, `update(input, dtSec, nowMs)`.
+- Consumes: `CONFIG` từ `src/config.ts`; `InputState` từ `src/systems/InputSystem.ts`.
+- Produces: `class Player` với `mesh`, `carrying: Vehicle | CustomerGoods | null`, `stunnedUntil`, `position`, `update(input, dtSec, nowMs)`.
 
-- [ ] **Step 1: Tạo stub `src/systems/InputSystem.ts` + `src/entities/Player.ts`**
+- [ ] **Step 1: Tạo stub `src/systems/InputSystem.ts` + `src/entities/CustomerGoods.ts`** (implementation đầy đủ ở Task 8 và Task 11)
 
-`src/systems/InputSystem.ts` (stub — implementation đầy đủ ở Task 8):
+`src/systems/InputSystem.ts`:
 
 ```ts
 export interface InputState {
@@ -992,17 +1107,56 @@ export class InputSystem {
 }
 ```
 
-`src/entities/Player.ts`:
+`src/entities/CustomerGoods.ts`:
+
+```ts
+import * as THREE from 'three';
+import type { ConveyorEntity } from '../core/ConveyorSystem';
+
+export class CustomerGoods {
+  readonly data: ConveyorEntity;
+  readonly mesh: THREE.Mesh;
+
+  constructor(scene: THREE.Scene, x: number, z: number, data: ConveyorEntity) {
+    this.data = data;
+    this.mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.5, 0.5, 0.5),
+      new THREE.MeshStandardMaterial({ color: 0xecf0f1 }),
+    );
+    this.mesh.position.set(x, 0.5, z);
+    scene.add(this.mesh);
+  }
+
+  get position(): { x: number; z: number } {
+    return { x: this.mesh.position.x, z: this.mesh.position.z };
+  }
+
+  setPosition(x: number, z: number): void {
+    this.mesh.position.x = x;
+    this.mesh.position.z = z;
+  }
+
+  dispose(scene: THREE.Scene): void {
+    scene.remove(this.mesh);
+    this.mesh.geometry.dispose();
+    (this.mesh.material as THREE.Material).dispose();
+  }
+}
+```
+
+- [ ] **Step 2: Tạo `src/entities/Player.ts`**
 
 ```ts
 import * as THREE from 'three';
 import { CONFIG } from '../config';
 import type { InputState } from '../systems/InputSystem';
 import type { Vehicle } from './Vehicle';
+import type { CustomerGoods } from './CustomerGoods';
 
 export class Player {
   readonly mesh: THREE.Mesh;
-  carrying: Vehicle | null = null;
+  carrying: Vehicle | CustomerGoods | null = null;
+  stunnedUntil = 0;
   private facing = new THREE.Vector2(0, 1);
   private dashUntil = 0;
   private dashCooldownUntil = 0;
@@ -1021,6 +1175,8 @@ export class Player {
   }
 
   update(input: InputState, dtSec: number, nowMs: number): void {
+    if (nowMs < this.stunnedUntil) return;
+
     if (input.dashJustPressed && nowMs >= this.dashCooldownUntil) {
       this.dashUntil = nowMs + CONFIG.dashDurationMs;
       this.dashCooldownUntil = nowMs + CONFIG.dashCooldownMs;
@@ -1054,34 +1210,37 @@ export class Player {
 }
 ```
 
-- [ ] **Step 2: Wire Player vào `Game`**
+- [ ] **Step 3: Wire Player vào `Game`**
 
 Thêm vào `Game`:
 
 ```ts
 readonly player: Player;
+readonly input: InputSystem;
 
 // trong constructor, sau build stations:
 this.player = new Player(this.scene);
+this.input = new InputSystem();
 
 // thêm method:
 update(dtSec: number, nowMs: number): void {
+  this.input.update();
   this.player.update(this.input.state, dtSec, nowMs);
 }
 ```
 
-Thêm import `Player`. Trong constructor: `this.input = new InputSystem();` (stub từ Step 1 — Task 8 thay bằng implementation đầy đủ).
+Thêm import `Player`, `InputSystem`.
 
-- [ ] **Step 3: Verify movement**
+- [ ] **Step 4: Verify movement**
 
 Run: `npm run dev`
 Expected: (sau Task 8) joystick/WASD di chuyển capsule trên mặt phẳng; dash lao nhanh 150ms rồi cooldown 2s; không ra khỏi map.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add -A
-git commit -m "feat: player capsule, movement, dash"
+git commit -m "feat: player capsule, movement, dash, stun hook"
 ```
 
 ---
@@ -1089,11 +1248,11 @@ git commit -m "feat: player capsule, movement, dash"
 ### Task 8: InputSystem — DOM joystick + buttons + keyboard
 
 **Files:**
-- Create: `src/ui/Joystick.ts`, `src/ui/TouchButton.ts`, `src/systems/InputSystem.ts`
-- Modify: `src/game/Game.ts`
+- Create: `src/ui/Joystick.ts`, `src/ui/TouchButton.ts`
+- Modify: `src/systems/InputSystem.ts`
 
 **Interfaces:**
-- Produces: `interface InputState { move, actionDown, actionJustPressed, dashJustPressed }`; `class InputSystem` với `state`, `update()`; `class Joystick` với `vector`; `class TouchButton` với `isDown`.
+- Produces: `class Joystick` với `vector`; `class TouchButton` với `isDown`; `class InputSystem` với `state`, `update()`.
 
 - [ ] **Step 1: Tạo `src/ui/Joystick.ts`** (DOM, pointer events)
 
@@ -1188,7 +1347,7 @@ export class TouchButton {
 }
 ```
 
-- [ ] **Step 3: Tạo `src/systems/InputSystem.ts`**
+- [ ] **Step 3: Thay `src/systems/InputSystem.ts` bằng implementation đầy đủ**
 
 ```ts
 import { Joystick } from '../ui/Joystick';
@@ -1257,19 +1416,10 @@ export class InputSystem {
 }
 ```
 
-- [ ] **Step 4: Wire InputSystem vào `Game`**
-
-Thay khai báo tạm ở Task 7:
+- [ ] **Step 4: Cập nhật constructor call trong `Game`**
 
 ```ts
-readonly input: InputSystem;
-
-// trong constructor:
 this.input = new InputSystem(document.getElementById('ui')!);
-
-// trong update():
-this.input.update();
-this.player.update(this.input.state, dtSec, nowMs);
 ```
 
 - [ ] **Step 5: Verify multi-touch + dash**
@@ -1289,14 +1439,14 @@ git commit -m "feat: DOM joystick, touch buttons, input system"
 ### Task 9: Vehicle entity + carry/drop/place
 
 **Files:**
-- Create: `src/entities/Vehicle.ts`
+- Create: `src/entities/Vehicle.ts` (thay stub)
 - Modify: `src/game/Game.ts`
 
 **Interfaces:**
 - Consumes: `VehicleStateMachine` từ Task 3; `Station` từ Task 6; `Player` từ Task 7; `nearestWithin` từ Task 5; `VEHICLES` từ Task 2.
-- Produces: `class Vehicle` với `model`, `mesh`, `position`, `setPosition(x, z)`, `updateLabel()`, `dispose(scene)`.
+- Produces: `class Vehicle` với `model`, `mesh`, `notifiedFull`, `position`, `setPosition(x, z)`, `updateLabel()`, `dispose(scene)`.
 
-- [ ] **Step 1: Tạo `src/entities/Vehicle.ts`**
+- [ ] **Step 1: Thay `src/entities/Vehicle.ts` bằng implementation đầy đủ**
 
 ```ts
 import * as THREE from 'three';
@@ -1308,6 +1458,7 @@ import { makeLabel, setLabelText } from '../ui/label3d';
 export class Vehicle {
   readonly model: VehicleStateMachine;
   readonly mesh: THREE.Mesh;
+  notifiedFull = false;
   private label: THREE.Sprite;
 
   constructor(scene: THREE.Scene, x: number, z: number, type: VehicleType) {
@@ -1335,7 +1486,8 @@ export class Vehicle {
   }
 
   updateLabel(): void {
-    setLabelText(this.label, `Bẩn ${Math.round(this.model.dirt)}% | Pin ${Math.round(this.model.battery)}%`);
+    const load = this.model.loadedWith ? ' | Đã gắn' : '';
+    setLabelText(this.label, `Bẩn ${Math.round(this.model.dirt)}% | Pin ${Math.round(this.model.battery)}%${load}`);
   }
 
   dispose(scene: THREE.Scene): void {
@@ -1363,10 +1515,10 @@ private handleAction(): void {
   if (!s.actionJustPressed) return;
   const player = this.player;
 
-  if (player.carrying) {
+  if (player.carrying instanceof Vehicle) {
     const station = nearestWithin(
       player.position,
-      this.stations.filter((st) => st.type !== 'intake'),
+      this.stations.filter((st) => st.type !== 'intake' && st.type !== 'conveyor'),
       CONFIG.interactionRange,
     );
     if (station) {
@@ -1374,13 +1526,17 @@ private handleAction(): void {
     } else {
       this.dropVehicle();
     }
+  } else if (player.carrying) {
+    this.tryLoadVehicle(player.carrying);
   } else {
     const vehicle = nearestWithin(
       player.position,
       this.vehicles.filter((v) => v.model.location !== 'exported'),
       CONFIG.interactionRange,
     );
-    if (vehicle) this.pickUpVehicle(vehicle);
+    if (vehicle) {
+      this.pickUpVehicle(vehicle);
+    }
   }
 }
 
@@ -1390,12 +1546,13 @@ private pickUpVehicle(vehicle: Vehicle): void {
   }
   vehicle.model.removeFromCharger();
   vehicle.model.location = 'carried';
+  vehicle.notifiedFull = false;
   this.player.carrying = vehicle;
 }
 
 private dropVehicle(): void {
   const vehicle = this.player.carrying;
-  if (!vehicle) return;
+  if (!(vehicle instanceof Vehicle)) return;
   vehicle.model.location = 'floor';
   vehicle.setPosition(this.player.position.x, this.player.position.z + 0.8);
   this.player.carrying = null;
@@ -1413,7 +1570,7 @@ private placeVehicle(station: Station, vehicle: Vehicle): void {
 
 private updateCarried(): void {
   const v = this.player.carrying;
-  if (v) v.setPosition(this.player.position.x, this.player.position.z);
+  if (v instanceof Vehicle) v.setPosition(this.player.position.x, this.player.position.z);
 }
 
 private updateVehicleLabels(): void {
@@ -1421,7 +1578,7 @@ private updateVehicleLabels(): void {
 }
 ```
 
-Thêm import `nearestWithin`, `Vehicle`, `CONFIG`.
+Thêm import `nearestWithin`, `Vehicle`, `CONFIG`. `tryLoadVehicle` sẽ có ở Task 11 — tạm khai báo stub `private tryLoadVehicle(_entity: CustomerGoods): void {}` để typecheck.
 
 - [ ] **Step 3: Verify carry/drop/place**
 
@@ -1440,23 +1597,15 @@ git commit -m "feat: vehicle entity, carry/drop/place"
 ### Task 10: Wash + Charger behaviors
 
 **Files:**
-- Modify: `src/game/Game.ts`, `src/entities/Vehicle.ts`
+- Modify: `src/game/Game.ts`
 
 **Interfaces:**
 - Consumes: `VehicleStateMachine.scrub/update/isOvercharged` từ Task 3; `ScoreSystem.addPenalty` từ Task 5; `InputState.actionDown` từ Task 8.
-- Produces: wash hold-to-scrub; charger auto-charge + overcharge penalty; `Vehicle.notifiedFull: boolean`.
+- Produces: wash hold-to-scrub; charger auto-charge + overcharge penalty.
 
-- [ ] **Step 1: Thêm `notifiedFull` vào `Vehicle`**
+- [ ] **Step 1: Wire wash + charger vào `Game.update()`**
 
-```ts
-notifiedFull = false;
-```
-
-Đồng thời trong `Game.pickUpVehicle()` (Task 9), thêm `vehicle.notifiedFull = false;` để xe nhấc ra rồi đặt lại vẫn flash chuông đúng.
-
-- [ ] **Step 2: Wire wash + charger vào `Game.update()`**
-
-Thêm vào `update()` sau `handleAction()`:
+Thêm `readonly score = new ScoreSystem();` vào `Game`. Thêm vào `update()` sau `handleAction()`:
 
 ```ts
 this.updateWash(dtSec);
@@ -1499,14 +1648,14 @@ private flashStation(station: Station, color: number): void {
 }
 ```
 
-Thêm `readonly score = new ScoreSystem();` vào `Game`, import `ScoreSystem`.
+Thêm import `ScoreSystem`.
 
-- [ ] **Step 3: Verify wash + charge + overcharge**
+- [ ] **Step 2: Verify wash + charge + overcharge**
 
 Run: `npm run dev`
 Expected: đặt xe vào RỬA XE → đứng gần giữ A → label "Bẩn" giảm về 0% trong ~3s; nhả nút → dừng. Đặt xe vào SẠC V-GREEN → pin tự tăng 0→100% trong ~8s; đạt 100% → pad flash trắng; để quá 3s → trạm nhấp nháy (scale pulse), điểm trừ liên tục; nhấc xe ra → dừng phạt.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
 git add -A
@@ -1515,27 +1664,222 @@ git commit -m "feat: wash hold-to-scrub, charger auto-charge, overcharge penalty
 
 ---
 
-### Task 11: Intake + Export + order flow
+### Task 11: CustomerGoods + conveyor visuals + load action
 
 **Files:**
-- Modify: `src/game/Game.ts`, `src/ui/label3d.ts`
+- Create: `src/entities/CustomerGoods.ts`
+- Modify: `src/game/Game.ts`
 
 **Interfaces:**
-- Consumes: `OrderSystem` từ Task 4; `ScoreSystem` từ Task 5; `VEHICLES` từ Task 2; `bus` từ Task 2.
-- Produces: intake spawn buttons; export fulfillment; events `orders:changed`, `score:changed`.
+- Consumes: `ConveyorSystem` từ Task 4; `ConveyorEntity` từ Task 4; `VehicleStateMachine.loadedWith` từ Task 3.
+- Produces: `class CustomerGoods` với `data: ConveyorEntity`, `mesh`, `position`, `setPosition(x, z)`, `dispose(scene)`; load action hoàn chỉnh.
+
+- [ ] **Step 1: Thay stub `src/entities/CustomerGoods.ts` bằng implementation đầy đủ**
+
+```ts
+import * as THREE from 'three';
+import type { ConveyorEntity } from '../core/ConveyorSystem';
+import { makeLabel, setLabelText } from '../ui/label3d';
+
+export class CustomerGoods {
+  readonly data: ConveyorEntity;
+  readonly mesh: THREE.Mesh;
+  private bubble: THREE.Sprite;
+
+  constructor(scene: THREE.Scene, x: number, z: number, data: ConveyorEntity) {
+    this.data = data;
+    const isCustomer = data.kind === 'customer';
+    this.mesh = new THREE.Mesh(
+      isCustomer
+        ? new THREE.CapsuleGeometry(0.25, 0.4, 4, 8)
+        : new THREE.BoxGeometry(0.5, 0.5, 0.5),
+      new THREE.MeshStandardMaterial({ color: data.tier === 'vip' ? 0xf1c40f : 0xecf0f1 }),
+    );
+    this.mesh.position.set(x, 0.5, z);
+    scene.add(this.mesh);
+
+    const reqLabel = data.vehicleReq === 'car' ? 'Ô TÔ' : 'XE MÁY';
+    this.bubble = makeLabel(`${isCustomer ? 'KHÁCH' : 'HÀNG'} · ${reqLabel}`);
+    this.bubble.position.set(0, 0.9, 0);
+    this.mesh.add(this.bubble);
+    if (data.tier === 'vip') {
+      setLabelText(this.bubble, `VIP · ${reqLabel}`);
+    }
+  }
+
+  get position(): { x: number; z: number } {
+    return { x: this.mesh.position.x, z: this.mesh.position.z };
+  }
+
+  setPosition(x: number, z: number): void {
+    this.mesh.position.x = x;
+    this.mesh.position.z = z;
+  }
+
+  dispose(scene: THREE.Scene): void {
+    scene.remove(this.mesh);
+    this.mesh.geometry.dispose();
+    (this.mesh.material as THREE.Material).dispose();
+  }
+}
+```
+
+- [ ] **Step 2: Wire conveyor vào `Game`**
+
+Thêm vào `Game`:
+
+```ts
+readonly conveyor = new ConveyorSystem({
+  slots: CONFIG.conveyorSlots,
+  shiftIntervalSec: CONFIG.conveyorShiftSec,
+});
+readonly conveyorItems: CustomerGoods[] = [];
+
+// trong constructor, sau stations:
+this.buildConveyorSlots();
+
+private buildConveyorSlots(): void {
+  const conveyor = this.stations.find((st) => st.type === 'conveyor')!;
+  for (let i = 0; i < CONFIG.conveyorSlots; i++) {
+    const slot = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 0.06, 1.2),
+      new THREE.MeshStandardMaterial({ color: 0x9b59b6, transparent: true, opacity: 0.35 }),
+    );
+    slot.position.set(conveyor.position.x, 0.03, conveyor.position.z - 2.4 + i * 1.6);
+    this.scene.add(slot);
+  }
+}
+
+private conveyorSlotPosition(slot: number): { x: number; z: number } {
+  const conveyor = this.stations.find((st) => st.type === 'conveyor')!;
+  return { x: conveyor.position.x, z: conveyor.position.z - 2.4 + slot * 1.6 };
+}
+
+private updateConveyor(dtSec: number): void {
+  const overflow = this.conveyor.update(dtSec);
+  for (const e of overflow) {
+    this.combo.onMiss();
+    this.score.addPenalty(CONFIG.missPenalty, 1);
+    bus.emit('combo:changed', this.combo.streak);
+    bus.emit('score:changed', this.score.score);
+  }
+  this.conveyor.fill();
+
+  for (const item of this.conveyorItems) {
+    const pos = this.conveyorSlotPosition(item.data.slot);
+    item.setPosition(pos.x, pos.z);
+  }
+  this.syncConveyorItems();
+}
+
+private syncConveyorItems(): void {
+  const ids = new Set(this.conveyor.entities.map((e) => e.id));
+  for (const item of [...this.conveyorItems]) {
+    if (!ids.has(item.data.id) && item !== this.player.carrying) {
+      item.dispose(this.scene);
+      this.conveyorItems.splice(this.conveyorItems.indexOf(item), 1);
+    }
+  }
+  for (const e of this.conveyor.entities) {
+    if (!this.conveyorItems.some((i) => i.data.id === e.id)) {
+      const pos = this.conveyorSlotPosition(e.slot);
+      this.conveyorItems.push(new CustomerGoods(this.scene, pos.x, pos.z, e));
+    }
+  }
+}
+
+private pickUpEntity(entity: CustomerGoods): void {
+  const taken = this.conveyor.take(entity.data.id);
+  if (!taken) return;
+  this.player.carrying = entity;
+}
+
+private tryLoadVehicle(entity: CustomerGoods): void {
+  const vehicle = nearestWithin(
+    this.player.position,
+    this.vehicles.filter((v) => v.model.dirt === 0 && v.model.battery >= 100 && !v.model.loadedWith),
+    CONFIG.interactionRange,
+  );
+  if (!vehicle) {
+    this.dropEntity();
+    return;
+  }
+  vehicle.model.loadedWith = { vehicleReq: entity.data.vehicleReq, tier: entity.data.tier };
+  entity.dispose(this.scene);
+  this.conveyorItems.splice(this.conveyorItems.indexOf(entity), 1);
+  this.player.carrying = null;
+}
+
+private dropEntity(): void {
+  const entity = this.player.carrying;
+  if (!(entity instanceof CustomerGoods)) return;
+  this.conveyor.putBack(entity.data);
+  this.player.carrying = null;
+}
+```
+
+Thêm import `ConveyorSystem`, `CustomerGoods`, `bus`. Thay stub `tryLoadVehicle` ở Task 9 bằng implementation này. Trong `handleAction()`, nhánh tay không thêm ưu tiên băng chuyền:
+
+```ts
+} else {
+  const entity = nearestWithin(
+    this.player.position,
+    this.conveyorItems,
+    CONFIG.interactionRange,
+  );
+  if (entity) {
+    this.pickUpEntity(entity);
+    return;
+  }
+  const vehicle = nearestWithin(
+    this.player.position,
+    this.vehicles.filter((v) => v.model.location !== 'exported'),
+    CONFIG.interactionRange,
+  );
+  if (vehicle) this.pickUpVehicle(vehicle);
+}
+```
+
+Trong `update()`, sau `updateChargers()`: `this.updateConveyor(dtSec);`. Trong `updateCarried()`, thêm nhánh entity:
+
+```ts
+const c = this.player.carrying;
+if (c instanceof Vehicle) c.setPosition(this.player.position.x, this.player.position.z);
+else if (c instanceof CustomerGoods) c.setPosition(this.player.position.x, this.player.position.z - 0.6);
+```
+
+- [ ] **Step 3: Verify conveyor + load**
+
+Run: `npm run dev`
+Expected: băng chuyền có 4 slot, khách/hàng spawn liên tục với bong bóng thoại (KHÁCH/HÀNG · Ô TÔ/XE MÁY, VIP vàng); entity trôi qua slot theo nhịp 8s; tràn cuối → biến mất, combo reset, trừ điểm; bấm A gần entity để nhặt, bấm A gần xe đã sạch + đầy pin để gắn; label xe hiện "Đã gắn".
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add -A
+git commit -m "feat: conveyor entities, speech bubbles, load onto vehicle"
+```
+
+---
+
+### Task 12: Intake + Export + combo flow
+
+**Files:**
+- Modify: `src/game/Game.ts`
+
+**Interfaces:**
+- Consumes: `ComboSystem` từ Task 5; `VEHICLES` từ Task 2; `bus` từ Task 2.
+- Produces: intake spawn buttons; export fulfillment với combo + VIP; events `score:changed`, `combo:changed`.
 
 - [ ] **Step 1: Wire intake spawn vào `Game`**
 
 Thêm vào `Game`:
 
 ```ts
-readonly orderSystem = new OrderSystem({ maxOrders: CONFIG.maxOrders, patienceRange: CONFIG.patienceRange });
+readonly combo = new ComboSystem();
 private intakeCooldownUntil = 0;
-private ordersEmitAccum = 0;
 
 // trong constructor, sau stations:
-this.orderSystem.fill();
-bus.emit('orders:changed', this.orderSystem.orders);
 this.buildIntakeButtons();
 
 private buildIntakeButtons(): void {
@@ -1575,110 +1919,152 @@ if (station.type === 'export') {
 }
 
 private tryExport(station: Station, vehicle: Vehicle): void {
-  if (!vehicle.model.canExport) {
+  if (!vehicle.model.canExport || !vehicle.model.loadedWith) {
     this.flashStation(station, 0xff0000);
     return;
   }
-  const order = this.orderSystem.tryFulfill(vehicle.model.type);
-  if (!order) {
+  const req = VEHICLES[vehicle.model.type].req;
+  if (vehicle.model.loadedWith.vehicleReq !== req) {
     this.flashStation(station, 0xff0000);
     return;
   }
-  this.score.addDelivery(VEHICLES[vehicle.model.type].basePoints);
+  const vip = vehicle.model.loadedWith.tier === 'vip' ? CONFIG.vipMultiplier : 1;
+  const points = VEHICLES[vehicle.model.type].basePoints * this.combo.multiplier * vip;
+  this.score.addDelivery(points);
+  this.combo.onDelivery();
   station.occupant = null;
   vehicle.model.exported = true;
   vehicle.model.location = 'exported';
   vehicle.dispose(this.scene);
   this.vehicles.splice(this.vehicles.indexOf(vehicle), 1);
-  this.orderSystem.fill();
-  bus.emit('orders:changed', this.orderSystem.orders);
   bus.emit('score:changed', this.score.score);
+  bus.emit('combo:changed', this.combo.streak);
   this.flashStation(station, 0x00ff00);
 }
 ```
 
-- [ ] **Step 3: Order tick trong `update()`**
-
-```ts
-this.updateOrders(dtSec);
-
-private updateOrders(dtSec: number): void {
-  this.orderSystem.update(dtSec);
-  this.orderSystem.fill();
-  this.ordersEmitAccum += dtSec;
-  if (this.ordersEmitAccum >= 0.25) {
-    this.ordersEmitAccum = 0;
-    bus.emit('orders:changed', this.orderSystem.orders);
-  }
-}
-```
-
-- [ ] **Step 4: Verify full loop**
+- [ ] **Step 3: Verify full loop**
 
 Run: `npm run dev`
-Expected: bấm BIKE/VF 5 → xe spawn ở NHẬP XE (cooldown 2s); bưng xe → rửa → sạc → xuất bến đúng loại đơn → điểm tăng, xe biến mất, đơn mới spawn; xuất sai (chưa sạch/chưa đầy pin/sai loại) → pad flash đỏ, xe vẫn ở đó.
+Expected: bấm BIKE/VF 5 → xe spawn ở NHẬP XE (cooldown 2s); bưng xe → rửa → sạc → nhặt khách/hàng đúng yêu cầu → gắn → xuất bến → điểm = base × combo × VIP, combo tăng; xuất sai (chưa sạch/chưa đầy pin/chưa gắn/sai yêu cầu xe) → pad flash đỏ, xe vẫn ở đó.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add -A
-git commit -m "feat: intake spawn, export fulfillment, order flow"
+git commit -m "feat: intake spawn, export with combo and VIP matching"
 ```
 
 ---
 
-### Task 12: HUD + timer + game over + restart
+### Task 13: Traffic jam NPC
+
+**Files:**
+- Modify: `src/game/Game.ts`
+
+**Interfaces:**
+- Consumes: `CONFIG.trafficIntervalSec/trafficSpeed/trafficStunSec` từ Task 2; `Player.stunnedUntil` từ Task 7.
+- Produces: NPC xe máy chạy ngang lane, va chạm → rơi xe đang bưng + stun.
+
+- [ ] **Step 1: Wire traffic vào `Game`**
+
+Thêm vào `Game`:
+
+```ts
+private npcs: THREE.Mesh[] = [];
+private trafficTimer = 0;
+
+private updateTraffic(dtSec: number): void {
+  this.trafficTimer += dtSec;
+  if (this.trafficTimer >= CONFIG.trafficIntervalSec) {
+    this.trafficTimer = 0;
+    const npc = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 0.6, 0.5),
+      new THREE.MeshStandardMaterial({ color: 0xe67e22 }),
+    );
+    npc.position.set(-12, 0.3, 0);
+    this.scene.add(npc);
+    this.npcs.push(npc);
+  }
+
+  for (const npc of [...this.npcs]) {
+    npc.position.x += CONFIG.trafficSpeed * dtSec;
+    if (npc.position.x > 12) {
+      this.scene.remove(npc);
+      npc.geometry.dispose();
+      (npc.material as THREE.Material).dispose();
+      this.npcs.splice(this.npcs.indexOf(npc), 1);
+      continue;
+    }
+    const d = Math.hypot(npc.position.x - this.player.position.x, npc.position.z - this.player.position.z);
+    if (d < 1.2) {
+      this.player.stunnedUntil = performance.now() + CONFIG.trafficStunSec * 1000;
+      if (this.player.carrying instanceof Vehicle) this.dropVehicle();
+    }
+  }
+}
+```
+
+Trong `update()`, sau `updateConveyor(dtSec)`: `this.updateTraffic(dtSec);`.
+
+- [ ] **Step 2: Verify traffic**
+
+Run: `npm run dev`
+Expected: mỗi 20s có NPC cam chạy ngang lane giữa map từ trái sang phải; player đứng trên lane bị va → stun 0.8s (không di chuyển được), nếu đang bưng xe thì xe rơi xuống sàn.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add -A
+git commit -m "feat: traffic jam NPC with stun and drop"
+```
+
+---
+
+### Task 14: HUD + timer + game over + restart
 
 **Files:**
 - Create: `src/ui/Hud.ts`
 - Modify: `src/game/Game.ts`
 
 **Interfaces:**
-- Consumes: `bus` events `orders:changed`, `score:changed`, `timer:changed`, `game:over`; `Order` từ Task 4; `VEHICLES` từ Task 2.
+- Consumes: `bus` events `score:changed`, `combo:changed`, `timer:changed`, `game:over`.
 - Produces: HUD DOM hoàn chỉnh; restart flow.
 
 - [ ] **Step 1: Tạo `src/ui/Hud.ts`**
 
 ```ts
 import { bus } from '../systems/EventBus';
-import { VEHICLES } from '../data/vehicles';
-import type { Order } from '../core/OrderSystem';
 
 export class Hud {
-  private ordersEl: HTMLDivElement;
   private scoreEl: HTMLDivElement;
+  private comboEl: HTMLDivElement;
   private timerEl: HTMLDivElement;
 
   constructor(parent: HTMLElement) {
-    this.ordersEl = document.createElement('div');
-    this.ordersEl.style.cssText =
-      'position:fixed;left:16px;top:16px;display:flex;gap:8px;font-size:14px;color:#fff;';
     this.scoreEl = document.createElement('div');
     this.scoreEl.style.cssText =
       'position:fixed;right:16px;top:16px;font-size:20px;font-weight:bold;color:#fff;';
+    this.comboEl = document.createElement('div');
+    this.comboEl.style.cssText =
+      'position:fixed;left:50%;top:56px;transform:translateX(-50%);font-size:18px;font-weight:bold;color:#f1c40f;';
     this.timerEl = document.createElement('div');
     this.timerEl.style.cssText =
       'position:fixed;left:50%;top:16px;transform:translateX(-50%);font-size:24px;font-weight:bold;color:#fff;';
-    parent.append(this.ordersEl, this.scoreEl, this.timerEl);
+    parent.append(this.scoreEl, this.comboEl, this.timerEl);
 
-    bus.on('orders:changed', (orders) => this.setOrders(orders as readonly Order[]));
     bus.on('score:changed', (score) => this.setScore(score as number));
+    bus.on('combo:changed', (streak) => this.setCombo(streak as number));
     bus.on('timer:changed', (t) => this.setTimer(t as number));
     bus.on('game:over', (score) => this.showGameOver(score as number));
   }
 
-  private setOrders(orders: readonly Order[]): void {
-    this.ordersEl.innerHTML = '';
-    for (const o of orders) {
-      const chip = document.createElement('div');
-      chip.textContent = `${VEHICLES[o.vehicleType].label} — ${Math.ceil(o.patience)}s`;
-      chip.style.cssText = `padding:6px 10px;border-radius:6px;background:${o.vehicleType === 'bike' ? '#2ecc71' : '#3498db'};color:#fff;`;
-      this.ordersEl.appendChild(chip);
-    }
-  }
-
   private setScore(score: number): void {
     this.scoreEl.textContent = `Điểm: ${Math.round(score)}`;
+  }
+
+  private setCombo(streak: number): void {
+    this.comboEl.textContent = streak > 0 ? `⭐ Combo x${streak}` : '';
   }
 
   private setTimer(t: number): void {
@@ -1738,7 +2124,7 @@ Thêm import `Hud`, `bus`.
 - [ ] **Step 3: Verify HUD + game over**
 
 Run: `npm run dev`
-Expected: HUD hiện đơn hàng + patience đếm ngược, điểm, timer; hết 120s → overlay HẾT GIỜ + điểm + nút CHƠI LẠI; bấm CHƠI LẠI → ván mới sạch (điểm 0, timer 120, đơn mới).
+Expected: HUD hiện điểm, combo (⭐ Combo xN), timer; hết 120s → overlay HẾT GIỜ + điểm + nút CHƠI LẠI; bấm CHƠI LẠI → ván mới sạch.
 
 - [ ] **Step 4: Commit**
 
@@ -1749,7 +2135,7 @@ git commit -m "feat: HUD, timer, game over and restart"
 
 ---
 
-### Task 13: Mobile polish + playtest build
+### Task 15: Mobile polish + playtest build
 
 **Files:**
 - Modify: `index.html`, `src/main.ts`
@@ -1802,7 +2188,7 @@ Expected: mở `http://<IP-máy-tính>:4173` trên điện thoại cùng WiFi �
 
 - [ ] **Step 4: Perf check**
 
-Expected: FPS ổn định ~60 trên máy tầm trung; không drop frame khi 3 xe + 3 đơn cùng lúc.
+Expected: FPS ổn định ~60 trên máy tầm trung; không drop frame khi 3 xe + 4 entity băng chuyền + NPC cùng lúc.
 
 - [ ] **Step 5: Commit**
 
@@ -1813,10 +2199,10 @@ git commit -m "feat: mobile polish, portrait overlay, production build"
 
 ---
 
-## Sau MVP
+## Sau MVP+
 
-- Playtest 3-5 người, ghi lại: loop có vui không, trạm nào bottleneck, tốc độ rửa/sạc có ổn không
+- Playtest 3-5 người, ghi lại: loop có vui không, băng chuyền có quá nhanh/chậm không, combo có khuyến khích chơi liều không
 - Tuning số trong `src/config.ts` theo feedback
-- Sau đó mới sang GĐ 2 (phụ kiện, combo, chaos, cao điểm, xe hỏng, map mới) — xem design doc
+- Sau đó mới sang GĐ 2 (quá sạc VFX, cao điểm, xe hỏng, Rocket, phụ kiện optional, map mới) — xem design doc
 - Model 3D final: concept 2D → image-to-3D → Blender → Mixamo → GLB (pipeline ở spec mục 6.6)
 
