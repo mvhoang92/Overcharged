@@ -131,7 +131,7 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 
 ### 5.7 Modes & Content
 
-- **Campaign:** 3 màn (Trạm Quận 1, Trạm Sân Bay, Trạm Cao Tốc), 3 sao theo điểm
+- **Campaign:** 3 màn (Trạm Quận 1, Trạm Sân Bay, Trạm Cao Tốc), mỗi màn **timer 120-180s**, 3 sao theo điểm
 - **Endless:** sống sót, 3 đơn hết hạn = game over, leaderboard
 - **Co-op:** 2-4 người, cùng modes, room link
 - **Xe:** Bike (nhanh, điểm thấp), VF 5 Taxi (trung bình), VF 8 Luxury (chậm, điểm cao, cần VIP kit)
@@ -182,6 +182,9 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 - State schema: players[], vehicles[], orders[], score, timer
 - Tick 20Hz, interpolation cho remote player, local prediction cho player mình
 - Co-op lite: không va chạm player-player, chung điểm/đơn, reservation trạm
+- **Server-authoritative:** server chạy shared simulation (vị trí/trạng thái xe, đơn, chaos, điểm); client chỉ gửi input và render theo state sync. Xe đang được bưng thuộc quyền server; 2 người giành cùng xe → server arbitrate first-come, người sau bị từ chối. ChaosDirector chạy server-side, đồng bộ toàn phòng.
+- **Shared sim module:** logic lõi (state machine xe, order, scoring) đóng gói thành package dùng chung — client chạy cho single-player, server chạy headless cho co-op. Tránh viết logic 2 lần.
+- **Room lifecycle:** chỉ join ở pre-game lobby (MVP, không join-in-progress); host disconnect → host migration, phòng sống tiếp; player disconnect → xe đang bưng rơi tại chỗ giữ nguyên trạng thái, 30s reconnect grace rồi remove khỏi phòng.
 - Reconnect grace 30s
 - Fallback: nếu chưa ổn định cuối W6 → launch single-player, co-op bổ sung sau
 
@@ -197,6 +200,13 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 - Static game: Vercel / Cloudflare Pages
 - Colyseus: Railway/Fly.io Singapore hoặc VPS VN (VNG Cloud/Viettel) cho latency
 - Supabase: hosted
+
+### 6.5 Support matrix
+
+- **Ưu tiên:** Android Chrome (perf target 60fps máy tầm trung)
+- **Bắt buộc:** iOS Safari (share link mở trên iPhone), in-app browser Zalo/FB/Messenger (kênh campaign chính)
+- **Secondary:** desktop Chrome/Firefox/Safari
+- Audio unlock on first touch (iOS), xử lý input quirks từng browser trong QA
 
 ## 7. Roadmap (8 tuần, solo dev + AI)
 
@@ -214,5 +224,7 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 - Brand assets chính thức (logo, màu, art xe) — placeholder đến khi có
 - Tuning số cụ thể (tốc độ, timer, điểm) — qua playtest
 - Đối tác voucher & pool code
+- **Giá trị voucher & mức chống gian lận** — quyết định dedupe thiết bị hay cần phone OTP (chờ human partner)
+- **Lưu lượng launch dự kiến** — quyết định sizing server Colyseus/Supabase (chờ human partner)
 - Danh sách analytics event chốt
 - Port Zalo Mini App (post-launch, tùy chiến dịch)
