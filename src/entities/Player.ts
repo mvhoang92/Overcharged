@@ -8,9 +8,13 @@ export class Player {
   readonly mesh: THREE.Mesh;
   carrying: Vehicle | CustomerGoods | null = null;
   stunnedUntil = 0;
-  private facing = new THREE.Vector2(0, 1);
+  private facingVec = new THREE.Vector2(0, 1);
   private dashUntil = 0;
   private dashCooldownUntil = 0;
+
+  get facing(): { x: number; z: number } {
+    return { x: this.facingVec.x, z: this.facingVec.y };
+  }
 
   constructor(scene: THREE.Scene) {
     this.mesh = new THREE.Mesh(
@@ -37,13 +41,13 @@ export class Player {
     let vx: number;
     let vz: number;
     if (nowMs < this.dashUntil) {
-      vx = this.facing.x * CONFIG.dashSpeed;
-      vz = this.facing.y * CONFIG.dashSpeed;
+      vx = this.facingVec.x * CONFIG.dashSpeed;
+      vz = this.facingVec.y * CONFIG.dashSpeed;
     } else {
       vx = input.move.x * speed;
       vz = input.move.y * speed;
       if (input.move.x !== 0 || input.move.y !== 0) {
-        this.facing.set(input.move.x, input.move.y).normalize();
+        this.facingVec.set(input.move.x, input.move.y).normalize();
       }
     }
 

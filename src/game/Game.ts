@@ -39,6 +39,7 @@ export class Game {
   readonly score = new ScoreSystem();
   readonly combo = new ComboSystem();
   private npcs: THREE.Mesh[] = [];
+  private flying: Array<{ entity: CustomerGoods; vx: number; vz: number; traveled: number }> = [];
   private trafficTimer = 0;
   private intakeCooldownUntil = 0;
   private timeLeft = CONFIG.levelDurationSec;
@@ -105,6 +106,7 @@ export class Game {
     this.updateCarried();
     this.updateChargers(dtSec);
     this.updateConveyor(dtSec);
+    this.updateFlying(dtSec);
     this.updateTraffic(dtSec);
     this.updateVehicleLabels();
     this.updateTimer(dtSec);
@@ -255,6 +257,7 @@ export class Game {
 
     for (const item of this.conveyorItems) {
       if (item === this.player.carrying) continue;
+      if (this.flying.some((f) => f.entity === item)) continue;
       const pos = this.conveyorSlotPosition(item.data.slot);
       item.setPosition(pos.x, pos.z);
     }
@@ -264,7 +267,11 @@ export class Game {
   private syncConveyorItems(): void {
     const ids = new Set(this.conveyor.entities.map((e) => e.id));
     for (const item of [...this.conveyorItems]) {
-      if (!ids.has(item.data.id) && item !== this.player.carrying) {
+      if (
+        !ids.has(item.data.id) &&
+        item !== this.player.carrying &&
+        !this.flying.some((f) => f.entity === item)
+      ) {
         item.dispose(this.scene);
         this.conveyorItems.splice(this.conveyorItems.indexOf(item), 1);
       }
@@ -305,22 +312,52 @@ export class Game {
   private throwEntity(): void {
     const entity = this.player.carrying;
     if (!(entity instanceof CustomerGoods)) return;
-    const target = nearestWithin(
-      this.player.position,
-      this.vehicles.filter(
-        (v) =>
-          v.model.dirt === 0 &&
-          v.model.battery >= 100 &&
-          !v.model.loadedWith &&
-          VEHICLES[v.model.type].req === entity.data.vehicleReq,
-      ),
-      CONFIG.throwRange,
+    const facing = this.player.facing;
+    entity.setPosition(
+      this.player.position.x + facing.x * 0.5,
+      this.player.position.z + facing.z * 0.5,
     );
-    if (!target) {
-      this.dropEntity();
-      return;
+    this.flying.push({
+      entity,
+      vx: facing.x * CONFIG.throwSpeed,
+      vz: facing.z * CONFIG.throwSpeed,
+      traveled: 0,
+    });
+    this.player.carrying = null;
+  }
+
+  private updateFlying(dtSec: number): void {
+    for (const f of [...this.flying]) {
+      f.traveled += Math.hypot(f.vx, f.vz) * dtSec;
+      f.entity.setPosition(
+        f.entity.position.x + f.vx * dtSec,
+        f.entity.position.z + f.vz * dtSec,
+      );
+      const t = Math.min(f.traveled / CONFIG.throwRange, 1);
+      f.entity.mesh.position.y = 0.5 + Math.sin(t * Math.PI) * 0.8;
+
+      const target = nearestWithin(
+        f.entity.position,
+        this.vehicles.filter(
+          (v) =>
+            v.model.dirt === 0 &&
+            v.model.battery >= 100 &&
+            !v.model.loadedWith &&
+            VEHICLES[v.model.type].req === f.entity.data.vehicleReq,
+        ),
+        1.2,
+      );
+      if (target) {
+        this.loadEntityOnto(target, f.entity);
+        this.flying.splice(this.flying.indexOf(f), 1);
+        continue;
+      }
+      if (f.traveled >= CONFIG.throwRange) {
+        f.entity.mesh.position.y = 0.5;
+        this.conveyor.putBack(f.entity.data);
+        this.flying.splice(this.flying.indexOf(f), 1);
+      }
     }
-    this.loadEntityOnto(target, entity);
   }
 
   private loadEntityOnto(vehicle: Vehicle, entity: CustomerGoods): void {

@@ -11,6 +11,7 @@ export const CONFIG = {
   intakeCooldownMs: 2000,
   interactionRange: 1.8,
   throwRange: 6,
+  throwSpeed: 14,
   levelDurationSec: 120,
   conveyorSlots: 4,
   conveyorShiftSec: 8,

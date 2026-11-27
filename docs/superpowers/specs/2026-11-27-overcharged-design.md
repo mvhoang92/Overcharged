@@ -141,7 +141,7 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → LOADED → EXPORTED
 - **Nửa trái — Virtual Joystick động:** cần gạt ảo xuất hiện ngay tại điểm chạm ngón tay, điều hướng 360°, biến mất khi nhả. Gạt cần khi đang cọ = ngắt cọ ngay (cọ dạng tap nên tự nhiên).
 - **Góc dưới phải — cụm 3 nút hình vòng cung:**
   - **CẦM/ĐẶT (to nhất):** nhấc/đặt xe, đưa xe vào/ra trụ sạc V-Green, nhặt khách/hàng, gắn khách/hàng lên xe, đẩy xe hoàn chỉnh vào cổng xuất bến.
-  - **CỌ/THAO TÁC (cỡ vừa, tách riêng):** đứng tay không cạnh bồn rửa, tap liên hồi để đánh bay vết bùn (mỗi tap -10% bẩn, ~10 tap sạch); tiến trình rửa giữ nguyên khi chạy đi giữa chừng. Đang cầm khách/hàng → ném qua làn đường (auto-target xe hợp lệ trong 6m; không có target thì trả về băng chuyền).
+  - **CỌ/THAO TÁC (cỡ vừa, tách riêng):** đứng tay không cạnh bồn rửa, tap liên hồi để đánh bay vết bùn (mỗi tap -10% bẩn, ~10 tap sạch); tiến trình rửa giữ nguyên khi chạy đi giữa chừng. Đang cầm khách/hàng → **ném theo hướng đang quay mặt** (projectile bay thẳng có vòng cung, tự gắn vào xe hợp lệ đầu tiên trên đường bay; bay hết tầm 6m không trúng thì trả về băng chuyền) — kiểu Overcooked.
   - **DASH (cỡ nhỏ):** lướt nhanh một đoạn ngắn, hồi chiêu 1.5s, để băng qua làn xe chạy; huých đồng đội (co-op, GĐ 3).
 - Keyboard fallback (desktop dev): WASD/arrows + Space (Cầm/Đặt) + E (Cọ/Thao tác) + Shift (Dash)
 - Landscape bắt buộc; portrait → overlay "xoay ngang máy"
