@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="620" viewBox="0 0 1000 620">
+  <rect width="1000" height="620" fill="#F7F9FC"/>
+  <text x="500" y="40" text-anchor="middle" font-family="sans-serif" font-size="26" font-weight="bold" fill="#1A1A2E">OVERCHARGED — Vật phẩm</text>
+
+  <!-- 1. Mũ bảo hiểm -->
+  <g transform="translate(100, 150)">
+    <path d="M-42,10 Q-42,-46 0,-46 Q42,-46 42,10 L42,18 L-42,18 Z" fill="#2ECC71" stroke="#1A1A2E" stroke-width="4"/>
+    <path d="M-42,4 L-52,10 L-52,18 L-42,18 Z" fill="#27AE60" stroke="#1A1A2E" stroke-width="3"/>
+    <path d="M-30,18 Q-30,34 0,34 Q30,34 30,18" fill="none" stroke="#1A1A2E" stroke-width="3"/>
+    <path d="M-20,-30 Q0,-40 20,-30" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+    <text x="0" y="70" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#1A1A2E">Mũ bảo hiểm Xanh</text>
+    <text x="0" y="90" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#7A7A8C">+50 điểm</text>
+  </g>
+
+  <!-- 2. Thùng hàng Express -->
+  <g transform="translate(300, 150)">
+    <rect x="-40" y="-34" width="80" height="62" rx="6" fill="#2ECC71" stroke="#1A1A2E" stroke-width="4"/>
+    <rect x="-14" y="-44" width="28" height="12" rx="4" fill="#27AE60" stroke="#1A1A2E" stroke-width="3"/>
+    <path d="M6,-20 L-8,2 L0,2 L-6,20 L10,-4 L2,-4 Z" fill="#F1C40F" stroke="#1A1A2E" stroke-width="2"/>
+    <line x1="-40" y1="-6" x2="40" y2="-6" stroke="#1A1A2E" stroke-width="2" opacity="0.4"/>
+    <text x="0" y="70" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#1A1A2E">Thùng hàng Express</text>
+    <text x="0" y="90" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#7A7A8C">+75 điểm</text>
+  </g>
+
+  <!-- 3. Nước & Khăn VIP -->
+  <g transform="translate(500, 150)">
+    <rect x="-34" y="-20" width="30" height="48" rx="6" fill="#3498DB" stroke="#1A1A2E" stroke-width="4"/>
+    <rect x="-28" y="-32" width="18" height="14" rx="3" fill="#3498DB" stroke="#1A1A2E" stroke-width="3"/>
+    <rect x="-24" y="-38" width="10" height="8" rx="2" fill="#F1C40F" stroke="#1A1A2E" stroke-width="2"/>
+    <rect x="4" y="-14" width="38" height="30" rx="4" fill="#FFFFFF" stroke="#1A1A2E" stroke-width="4"/>
+    <line x1="4" y1="-2" x2="42" y2="-2" stroke="#F1C40F" stroke-width="5"/>
+    <text x="0" y="70" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#1A1A2E">Nước &amp; Khăn VIP</text>
+    <text x="0" y="90" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#7A7A8C">+100 điểm</text>
+  </g>
+
+  <!-- 4. Lốp xe -->
+  <g transform="translate(700, 150)">
+    <circle r="40" fill="#1A1A2E" stroke="#1A1A2E" stroke-width="4"/>
+    <circle r="22" fill="#95A5A6" stroke="#1A1A2E" stroke-width="4"/>
+    <circle r="8" fill="#1A1A2E"/>
+    <g stroke="#555566" stroke-width="4">
+      <line x1="0" y1="-40" x2="0" y2="-26"/><line x1="0" y1="40" x2="0" y2="26"/>
+      <line x1="-40" y1="0" x2="-26" y2="0"/><line x1="40" y1="0" x2="26" y2="0"/>
+      <line x1="-28" y1="-28" x2="-18" y2="-18"/><line x1="28" y1="28" x2="18" y2="18"/>
+      <line x1="28" y1="-28" x2="18" y2="-18"/><line x1="-28" y1="28" x2="-18" y2="18"/>
+    </g>
+    <text x="0" y="70" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#1A1A2E">Lốp xe</text>
+    <text x="0" y="90" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#7A7A8C">Sửa lốp xẹp</text>
+  </g>
+
+  <!-- 5. Ắc quy -->
+  <g transform="translate(900, 150)">
+    <rect x="-38" y="-26" width="76" height="54" rx="6" fill="#2C3E50" stroke="#1A1A2E" stroke-width="4"/>
+    <rect x="-26" y="-36" width="14" height="12" rx="2" fill="#E74C3C" stroke="#1A1A2E" stroke-width="3"/>
+    <rect x="12" y="-36" width="14" height="12" rx="2" fill="#3498DB" stroke="#1A1A2E" stroke-width="3"/>
+    <text x="-19" y="-26" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF">+</text>
+    <text x="19" y="-26" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF">−</text>
+    <path d="M4,-8 L-8,8 L0,8 L-4,20 L10,2 L2,2 Z" fill="#F1C40F"/>
+    <text x="0" y="70" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#1A1A2E">Ắc quy</text>
+    <text x="0" y="90" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#7A7A8C">Sửa ắc quy yếu</text>
+  </g>
+
+  <!-- 6. Chip phần mềm -->
+  <g transform="translate(100, 420)">
+    <rect x="-34" y="-34" width="68" height="68" rx="6" fill="#27AE60" stroke="#1A1A2E" stroke-width="4"/>
+    <rect x="-18" y="-18" width="36" height="36" rx="4" fill="#1A1A2E"/>
+    <text x="0" y="6" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#2ECC71">FW</text>
+    <g stroke="#95A5A6" stroke-width="4">
+      <line x1="-34" y1="-20" x2="-46" y2="-20"/><line x1="-34" y1="0" x2="-46" y2="0"/><line x1="-34" y1="20" x2="-46" y2="20"/>
+      <line x1="34" y1="-20" x2="46" y2="-20"/><line x1="34" y1="0" x2="46" y2="0"/><line x1="34" y1="20" x2="46" y2="20"/>
+      <line x1="-20" y1="-34" x2="-20" y2="-46"/><line x1="0" y1="-34" x2="0" y2="-46"/><line x1="20" y1="-34" x2="20" y2="-46"/>
+      <line x1="-20" y1="34" x2="-20" y2="46"/><line x1="0" y1="34" x2="0" y2="46"/><line x1="20" y1="34" x2="20" y2="46"/>
+    </g>
+    <text x="0" y="70" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#1A1A2E">Chip phần mềm</text>
+    <text x="0" y="90" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#7A7A8C">Sửa lỗi phần mềm</text>
+  </g>
+
+  <!-- 7. Cà phê sữa đá -->
+  <g transform="translate(300, 420)">
+    <path d="M-26,-30 L26,-30 L20,34 L-20,34 Z" fill="#8B5E3C" stroke="#1A1A2E" stroke-width="4"/>
+    <path d="M-24,-18 L24,-18 L20,34 L-20,34 Z" fill="#D9A066"/>
+    <rect x="-16" y="-14" width="14" height="14" rx="3" fill="#FFFFFF" opacity="0.7"/>
+    <rect x="2" y="-6" width="12" height="12" rx="3" fill="#FFFFFF" opacity="0.7"/>
+    <line x1="10" y1="-30" x2="22" y2="-52" stroke="#E74C3C" stroke-width="5" stroke-linecap="round"/>
+    <text x="0" y="70" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#1A1A2E">Cà phê sữa đá</text>
+    <text x="0" y="90" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#7A7A8C">+30% tốc 10s</text>
+  </g>
+
+  <!-- 8. Trà đá -->
+  <g transform="translate(500, 420)">
+    <path d="M-26,-30 L26,-30 L20,34 L-20,34 Z" fill="#F1C40F" opacity="0.55" stroke="#1A1A2E" stroke-width="4"/>
+    <rect x="-16" y="-14" width="14" height="14" rx="3" fill="#FFFFFF" opacity="0.7"/>
+    <rect x="2" y="-4" width="12" height="12" rx="3" fill="#FFFFFF" opacity="0.7"/>
+    <line x1="8" y1="-30" x2="18" y2="-50" stroke="#2ECC71" stroke-width="5" stroke-linecap="round"/>
+    <text x="0" y="70" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#1A1A2E">Trà đá</text>
+    <text x="0" y="90" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#7A7A8C">+15% tốc 10s</text>
+  </g>
+
+  <!-- 9. Cọc giao thông -->
+  <g transform="translate(700, 420)">
+    <path d="M0,-44 L26,34 L-26,34 Z" fill="#E67E22" stroke="#1A1A2E" stroke-width="4"/>
+    <path d="M-14,0 L14,0 L18,12 L-18,12 Z" fill="#FFFFFF"/>
+    <rect x="-32" y="32" width="64" height="10" rx="4" fill="#E67E22" stroke="#1A1A2E" stroke-width="3"/>
+    <text x="0" y="70" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#1A1A2E">Cọc giao thông</text>
+    <text x="0" y="90" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#7A7A8C">Trang trí map</text>
+  </g>
+
+  <!-- 10. Dây sạc V-Green -->
+  <g transform="translate(900, 420)">
+    <path d="M-40,20 Q-40,-30 0,-30 Q40,-30 40,10" fill="none" stroke="#2ECC71" stroke-width="10" stroke-linecap="round"/>
+    <rect x="28" y="4" width="24" height="34" rx="6" fill="#1A1A2E" stroke="#1A1A2E" stroke-width="3"/>
+    <rect x="34" y="12" width="5" height="10" rx="2" fill="#F1C40F"/>
+    <rect x="42" y="12" width="5" height="10" rx="2" fill="#F1C40F"/>
+    <circle cx="-40" cy="20" r="8" fill="#1A1A2E"/>
+    <text x="0" y="70" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#1A1A2E">Dây sạc V-Green</text>
+    <text x="0" y="90" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#7A7A8C">Dụng cụ trạm sạc</text>
+  </g>
+
+  <text x="500" y="600" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#A0A0B0">Hàng 1: phụ kiện gắn xe + linh kiện sửa · Hàng 2: vật phẩm đặc biệt + dụng cụ trạm</text>
+</svg>
