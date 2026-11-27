@@ -119,9 +119,13 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → LOADED → EXPORTED
 ### 5.4 Khách/hàng & Combo
 
 - **Băng chuyền 4 slot:** khách/hàng spawn liên tục, trôi từ đầu đến cuối; tràn cuối = hất đơn, -điểm, combo reset
-- **Mỗi thực thể:** loại (Khách / Hàng) + hạng (Thường / VIP) + yêu cầu xe (Ô tô / Xe máy) — hiện trong **bong bóng thoại trên đầu**
-- **Matching:** yêu cầu Ô tô → VF 5 Taxi; yêu cầu Xe máy → Bike
-- **VIP:** điểm x2, patience ngắn hơn, bong bóng vàng
+- **Mỗi thực thể — 4 thuộc tính, 3 kênh hiển thị:**
+  - **Loại** (Khách / Hàng) → **icon** trên đầu
+  - **Hạng** (Thường / VIP) → **màu viền** (VIP = viền vàng)
+  - **Yêu cầu xe** (Ô tô / Xe máy) → **bong bóng thoại**
+  - **Luồng** (Cao tốc / Đường quê / Đường biển) → **bong bóng thoại** (GĐ 2, cần nhiều làn xuất)
+- **Matching:** yêu cầu Ô tô → VF 5 Taxi; yêu cầu Xe máy → Bike. Luồng → xuất đúng làn (GĐ 2)
+- **VIP:** điểm x2, patience ngắn hơn, viền vàng
 - **Combo:** xuất chuyến liên tiếp không hất đơn → 1x → 1.5x → 2x → 3x → 5x (5 sao)
 - Hất đơn → combo reset, mất điểm (Campaign) / -1 mạng (Endless)
 

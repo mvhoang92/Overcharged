@@ -65,15 +65,18 @@
 
 ### 4.0 Khách/hàng (nguyên liệu chính — thay phụ kiện)
 
-| Thực thể | Hạng | Yêu cầu xe | Bong bóng thoại |
-|---|---|---|---|
-| Khách | Thường | Ô tô / Xe máy | Trắng, icon xe |
-| Khách | VIP | Ô tô / Xe máy | Vàng, icon xe + ngôi sao |
-| Hàng | Thường | Ô tô / Xe máy | Trắng, icon hộp |
-| Hàng | VIP | Ô tô / Xe máy | Vàng, icon hộp + ngôi sao |
+**4 thuộc tính, 3 kênh hiển thị:**
 
-- Art cần: 4 sprite/model chibi (khách thường, khách VIP, hàng thường, hàng VIP) + bong bóng thoại 2 icon (ô tô, xe máy)
+| Thuộc tính | Giá trị | Kênh hiển thị |
+|---|---|---|
+| Loại | Khách / Hàng | **Icon** trên đầu (người / hộp) |
+| Hạng | Thường / VIP | **Màu viền** (trắng / vàng) |
+| Yêu cầu xe | Ô tô / Xe máy | **Bong bóng thoại** (icon xe) |
+| Luồng (GĐ 2) | Cao tốc / Đường quê / Đường biển | **Bong bóng thoại** (icon luồng, màu theo luồng) |
+
+- Art cần: 2 icon loại (người, hộp) + 2 icon yêu cầu xe (ô tô, xe máy) + 3 icon luồng (cao tốc, đường quê, đường biển) + viền thường/VIP
 - Trôi trên băng chuyền 4 slot; tràn cuối = hất đơn
+- MVP+: hiển thị loại + hạng + yêu cầu xe. Luồng bật ở GĐ 2 khi có nhiều làn xuất
 
 ### 4.1 Phụ kiện (gắn lên xe — GĐ 2+, optional)
 
