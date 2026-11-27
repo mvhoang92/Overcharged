@@ -1,7 +1,7 @@
 # Overcharged: Trạm Sạc Bão Táp — Design Doc
 
 - **Ngày:** 2026-11-27
-- **Trạng thái:** Đã duyệt — MVP-first: backend/co-op/voucher hoãn lại, làm bản chơi được trước
+- **Trạng thái:** Draft — chờ duyệt (MVP-first: backend/co-op/voucher hoãn lại, làm bản chơi được trước)
 - **Tác giả:** V-LLM (AI) cùng human partner
 - **Loại:** Project — design doc đầy đủ
 
@@ -135,6 +135,7 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 - **Endless:** sống sót, 3 đơn hết hạn = game over, leaderboard
 - **Co-op:** 2-4 người, cùng modes, room link
 - **Xe:** Bike (nhanh, điểm thấp), VF 5 Taxi (trung bình), VF 8 Luxury (chậm, điểm cao, cần VIP kit)
+- **Nhân vật:** 4 nhân vật playable, **cùng stats — chỉ khác ngoại hình** (giống Overcooked, công bằng cho leaderboard)
 - **Phụ kiện:** Mũ bảo hiểm, Thùng hàng Express, Nước & Khăn VIP
 - **Map:** single-screen arena, trạm quanh viền, lane giao thông ở giữa
 

@@ -15,14 +15,16 @@
 
 ## 2. Nhân vật (4 playable)
 
-| # | Tên | Vai trò | Ngoại hình | Perk (GĐ 2+) |
-|---|---|---|---|---|
-| 1 | **Tí Điện** | Kỹ thuật viên | Nam, đầu 20s, tóc xù đen, đồng phục cyan-teal, đai dụng cụ, cầm cờ lê | Sửa xe nhanh 20% |
-| 2 | **Na Nước** | Nhân viên rửa xe | Nữ, tóc đuôi ngựa, tạp dề vàng-green, găng cao su, bình xịt | Rửa nhanh 15% |
-| 3 | **Hùng Búa** | Điều phối viên | Nam lực điền, nón bảo hộ, vest cam, găng tay to | Giảm phạt chậm khi bưng (0.9 thay vì 0.8); bưng bus 1 mình ở 50% tốc |
-| 4 | **Chị Thảo** | Quản lý ca | Nữ 30s, kính, đồng phục tím-teal, cầm clipboard | +5% điểm khi giao |
+**Quyết định (2026-11-27): Hướng A — giống hệt Overcooked.** Cả 4 nhân vật **cùng stats, chỉ khác ngoại hình** (cosmetic thuần). Không perk, không role khóa — công bằng cho leaderboard, ai cũng làm được mọi việc, dễ học trong 30 giây. Perk/role để ngỏ cho GĐ 2+ nếu playtest thấy nhân vật nhạt (hướng B: perk nhẹ, tắt ở mode xếp hạng).
 
-- **MVP:** cosmetic thuần, cả 4 cùng stats. Perk mở ở GĐ 2.
+| # | Tên | Vai trò (flavor) | Ngoại hình | Stats |
+|---|---|---|---|---|
+| 1 | **Tí Điện** | Kỹ thuật viên | Nam, đầu 20s, tóc xù đen, đồng phục cyan-teal, đai dụng cụ, cầm cờ lê | Giống hệt |
+| 2 | **Na Nước** | Nhân viên rửa xe | Nữ, tóc đuôi ngựa, tạp dề vàng-green, găng cao su, bình xịt | Giống hệt |
+| 3 | **Hùng Búa** | Điều phối viên | Nam lực điền, nón bảo hộ, vest cam, găng tay to | Giống hệt |
+| 4 | **Chị Thảo** | Quản lý ca | Nữ 30s, kính, đồng phục tím-teal, cầm clipboard | Giống hệt |
+
+- "Vai trò" chỉ là flavor text cho marketing — không ảnh hưởng gameplay.
 - **Animation cần:** walk 4 hướng × 4 frame (16), carry 4 hướng × 2 (8), action 2, idle 2 → ~28 frame/nhân vật
 - **MVP placeholder:** vòng tròn màu + mũi tên hướng
 
