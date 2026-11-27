@@ -26,6 +26,12 @@ npm test         # unit tests
 npm run build    # production build
 ```
 
+## Chơi online
+
+**https://overcharged-hoang-c3b5.vercel.app**
+
+Mở trên điện thoại (landscape), share link cho bạn bè chơi ngay — không cần cài đặt.
+
 ## Trạng thái
 
 MVP+ đang phát triển — core loop single-player: nhập xe → rửa → sạc → gắn khách/hàng → xuất chuyến.
