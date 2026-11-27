@@ -100,8 +100,16 @@
 
 ## 6. Concept Images
 
+**SVG (vẽ tay):**
 - `docs/concepts/characters.svg` — lineup 4 nhân vật (front + top-down)
 - `docs/concepts/map-quan-1.svg` — map Trạm Quận 1
 - `docs/concepts/items.svg` — bộ vật phẩm
 
-> Ghi chú: V-LLM không có model tạo ảnh; concept vẽ bằng SVG thuần (flat vector), mở trực tiếp trong browser để xem.
+**Generated (AI, đã chọn hướng):**
+- `docs/concepts/generated/characters-v1.png` — 4 nhân vật front + back view (base chính)
+- `docs/concepts/generated/characters-v2-vietnam.png` — biến thể Việt hóa: nón lá, mũ tai bèo, áo dài (skin sự kiện)
+- `docs/concepts/generated/map-dusk.png` — map hoàng hôn, layout chuẩn spec
+- `docs/concepts/generated/map-street.png` — map phố Việt: nhà phố, hoa phượng, xe ôm, quán cà phê ghế nhựa (map chính)
+- `docs/concepts/generated/items.png` — 10 vật phẩm, sẵn sàng làm icon
+
+> Ghi chú: V-LLM không có model tạo ảnh; SVG vẽ tay, PNG do human partner generate qua agent khác.
