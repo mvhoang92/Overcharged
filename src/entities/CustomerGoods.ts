@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { ConveyorEntity } from '../core/ConveyorSystem';
-import { makeLabel, setLabelText } from '../ui/label3d';
+import { makeLabel } from '../ui/label3d';
 
 export class CustomerGoods {
   readonly data: ConveyorEntity;
@@ -20,12 +20,11 @@ export class CustomerGoods {
     scene.add(this.mesh);
 
     const reqLabel = data.vehicleReq === 'car' ? 'Ô TÔ' : 'XE MÁY';
-    this.bubble = makeLabel(`${isCustomer ? 'KHÁCH' : 'HÀNG'} · ${reqLabel}`);
+    const kindLabel = isCustomer ? 'KHÁCH' : 'HÀNG';
+    const tierLabel = data.tier === 'vip' ? ' VIP' : '';
+    this.bubble = makeLabel(`${kindLabel}${tierLabel} · ${reqLabel}`);
     this.bubble.position.set(0, 0.9, 0);
     this.mesh.add(this.bubble);
-    if (data.tier === 'vip') {
-      setLabelText(this.bubble, `VIP · ${reqLabel}`);
-    }
   }
 
   get position(): { x: number; z: number } {

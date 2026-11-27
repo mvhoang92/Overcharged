@@ -21,7 +21,7 @@ export class Player {
       new THREE.CapsuleGeometry(0.4, 0.8, 4, 8),
       new THREE.MeshStandardMaterial({ color: 0xffffff }),
     );
-    this.mesh.position.set(0, 0.8, 2);
+    this.mesh.position.set(-4, 0.8, 2);
     scene.add(this.mesh);
   }
 

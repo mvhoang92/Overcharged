@@ -80,6 +80,9 @@ export class Game {
     this.input = new InputSystem(document.getElementById('ui')!);
     new Hud(document.getElementById('ui')!);
     this.buildIntakeButtons();
+    bus.emit('score:changed', 0);
+    bus.emit('combo:changed', 0);
+    bus.emit('timer:changed', CONFIG.levelDurationSec);
 
     window.addEventListener('resize', () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
