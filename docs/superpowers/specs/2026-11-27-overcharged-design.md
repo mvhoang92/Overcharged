@@ -1,7 +1,7 @@
 # Overcharged: Trạm Sạc Bão Táp — Design Doc
 
 - **Ngày:** 2026-11-27
-- **Trạng thái:** Draft — chờ duyệt cuối (3D Three.js đã chốt; MVP-first: backend/co-op/voucher hoãn lại)
+- **Trạng thái:** Đã duyệt (2026-11-27) — 3D Three.js; MVP-first: backend/co-op/voucher hoãn lại
 - **Tác giả:** V-LLM (AI) cùng human partner
 - **Loại:** Project — design doc đầy đủ
 
@@ -113,6 +113,8 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 | Accessory | 3 stack phụ kiện; player bưng phụ kiện tới xe, gắn (tối đa 3/xe) |
 | Export | Đặt xe khớp đơn → điểm + combo; sai → từ chối, xe vẫn đó |
 
+**Phí quá giờ (blocking fee) — GĐ 2:** chỉ áp dụng ở Wash và Charger. Wash: xe nằm >10s không cọ → -2 điểm/s. Charger: quá 3s sau 100% → -5 điểm/s (overcharge).
+
 ### 5.4 Đơn hàng & Combo
 
 - Queue 3-5, mỗi đơn: loại xe + 0-2 phụ kiện + patience 60-90s
@@ -138,6 +140,10 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 - **Co-op:** 2-4 người, cùng modes, room link
 - **Xe:** Bike (nhanh, điểm thấp), VF 5 Taxi (trung bình), VF 8 Luxury (chậm, điểm cao, cần VIP kit)
 - **Nhân vật:** 4 nhân vật playable, **cùng stats — chỉ khác ngoại hình** (giống Overcooked, công bằng cho leaderboard)
+- **Xe hỏng (GĐ 2):** 3 loại — lốp xẹp (bơm), ắc quy yếu (thay), phần mềm lỗi (cập nhật) — cần trạm Repair
+- **Rocket SM (GĐ 2):** đơn huyền thoại ~10%/màn, patience 30s, full service + 3 phụ kiện, điểm 2000, quá sạc = nổ -500
+- **Bus (GĐ 3):** xe buýt điện VinBus, bưng 2 người hoặc 1 người chậm 40%, cần Trụ Sạc Nhanh, điểm 800
+- **Cao điểm (GĐ 2):** 2-3 cửa sổ/màn, đơn spawn nhanh hơn, điểm x1.5, patience drain x1.5
 - **Phụ kiện:** Mũ bảo hiểm, Thùng hàng Express, Nước & Khăn VIP
 - **Map:** single-screen arena, trạm quanh viền, lane giao thông ở giữa
 
@@ -231,8 +237,8 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 | GĐ | Tuần | Nội dung | Milestone |
 |---|---|---|---|
 | **MVP** | W1-3 | Core loop single-player 3D: 1 map, 1 player (capsule placeholder), 2 xe, 4 trạm, joystick+action+dash, camera 3/4 | Link chơi được để playtest |
-| 2 | W4-6 | Phụ kiện, combo 5 sao, quá sạc VFX, chaos, 3 map, 3 xe, SFX, tutorial, VI/EN | Bản single-player đầy đủ |
-| 3 | W7-9 | Supabase (leaderboard/voucher/analytics), Colyseus co-op 2-4, lobby, room link | Co-op chạy được |
+| 2 | W4-6 | Phụ kiện, combo 5 sao, quá sạc VFX, chaos, cao điểm + phí quá giờ, xe hỏng + Repair, Rocket SM, 3 map, 3 xe, SFX, tutorial, VI/EN | Bản single-player đầy đủ |
+| 3 | W7-9 | Supabase (leaderboard/voucher/analytics), Colyseus co-op 2-4, lobby, room link, Bus + Trụ Sạc Nhanh | Co-op chạy được |
 | 4 | W10-12 | Model 3D final + rig + animation (Mixamo), branding, perf, QA thiết bị, OG card, soft launch | Launch |
 
 **Fallback:** co-op trượt deadline → launch single-player cuối W9, co-op bổ sung sau. Perf 3D fail trên Android tầm trung → pre-render sprite 2D, quay về Phaser.
@@ -249,8 +255,8 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 - Danh sách analytics event chốt
 - Port Zalo Mini App (post-launch, tùy chiến dịch)
 
-**Đề xuất chờ xác nhận (4 câu từ brainstorm):**
-1. Phí quá giờ: chỉ Wash + Charger (đề xuất) hay tất cả trạm
-2. Cao điểm + phí quá giờ: GĐ 2 (đề xuất) hay MVP
-3. Xe hỏng: GĐ 2 (đề xuất) hay GĐ 3
-4. Bus GĐ 3, Rocket GĐ 2 (đề xuất)
+**Đã chốt (2026-11-27):**
+1. Phí quá giờ: chỉ Wash + Charger
+2. Cao điểm + phí quá giờ: GĐ 2
+3. Xe hỏng: GĐ 2
+4. Bus GĐ 3, Rocket GĐ 2
