@@ -38,9 +38,9 @@ export class VehicleStateMachine {
     return this.dirt === 0 && this.battery >= 100 && this.loadedWith !== null && !this.exported;
   }
 
-  scrub(dtSec: number): void {
+  scrubTap(): void {
     if (this.location !== 'wash') return;
-    this.dirt = Math.max(0, this.dirt - CONFIG.washRatePerSec * dtSec);
+    this.dirt = Math.max(0, this.dirt - CONFIG.scrubPerTap);
   }
 
   placeOnCharger(): void {

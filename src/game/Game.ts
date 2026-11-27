@@ -100,9 +100,9 @@ export class Game {
     if (this.gameOver) return;
     this.input.update();
     this.player.update(this.input.state, dtSec, nowMs);
-    this.handleAction();
+    this.handlePickPlace();
+    this.handleSecondary();
     this.updateCarried();
-    this.updateWash(dtSec);
     this.updateChargers(dtSec);
     this.updateConveyor(dtSec);
     this.updateTraffic(dtSec);
@@ -110,9 +110,9 @@ export class Game {
     this.updateTimer(dtSec);
   }
 
-  private handleAction(): void {
+  private handlePickPlace(): void {
     const s = this.input.state;
-    if (!s.actionJustPressed) return;
+    if (!s.pickJustPressed) return;
     const player = this.player;
 
     if (player.carrying instanceof Vehicle) {
@@ -141,6 +141,20 @@ export class Game {
       );
       if (vehicle) this.pickUpVehicle(vehicle);
     }
+  }
+
+  private handleSecondary(): void {
+    const s = this.input.state;
+    if (!s.actionJustPressed) return;
+    if (this.player.carrying instanceof CustomerGoods) {
+      this.throwEntity();
+      return;
+    }
+    if (this.player.carrying) return;
+    const wash = this.stations.find((st) => st.type === 'wash');
+    if (!wash || !wash.occupant) return;
+    if (nearestWithin(this.player.position, [wash], CONFIG.interactionRange) !== wash) return;
+    wash.occupant.model.scrubTap();
   }
 
   private pickUpVehicle(vehicle: Vehicle): void {
@@ -182,15 +196,6 @@ export class Game {
 
   private updateVehicleLabels(): void {
     for (const v of this.vehicles) v.updateLabel();
-  }
-
-  private updateWash(dtSec: number): void {
-    const s = this.input.state;
-    if (!s.actionDown || this.player.carrying) return;
-    const wash = this.stations.find((st) => st.type === 'wash');
-    if (!wash || !wash.occupant) return;
-    if (nearestWithin(this.player.position, [wash], CONFIG.interactionRange) !== wash) return;
-    wash.occupant.model.scrub(dtSec);
   }
 
   private updateChargers(dtSec: number): void {
@@ -281,13 +286,44 @@ export class Game {
   private tryLoadVehicle(entity: CustomerGoods): void {
     const vehicle = nearestWithin(
       this.player.position,
-      this.vehicles.filter((v) => v.model.dirt === 0 && v.model.battery >= 100 && !v.model.loadedWith),
+      this.vehicles.filter(
+        (v) =>
+          v.model.dirt === 0 &&
+          v.model.battery >= 100 &&
+          !v.model.loadedWith &&
+          VEHICLES[v.model.type].req === entity.data.vehicleReq,
+      ),
       CONFIG.interactionRange,
     );
-    if (!vehicle || VEHICLES[vehicle.model.type].req !== entity.data.vehicleReq) {
+    if (!vehicle) {
       this.dropEntity();
       return;
     }
+    this.loadEntityOnto(vehicle, entity);
+  }
+
+  private throwEntity(): void {
+    const entity = this.player.carrying;
+    if (!(entity instanceof CustomerGoods)) return;
+    const target = nearestWithin(
+      this.player.position,
+      this.vehicles.filter(
+        (v) =>
+          v.model.dirt === 0 &&
+          v.model.battery >= 100 &&
+          !v.model.loadedWith &&
+          VEHICLES[v.model.type].req === entity.data.vehicleReq,
+      ),
+      CONFIG.throwRange,
+    );
+    if (!target) {
+      this.dropEntity();
+      return;
+    }
+    this.loadEntityOnto(target, entity);
+  }
+
+  private loadEntityOnto(vehicle: Vehicle, entity: CustomerGoods): void {
     vehicle.model.loadedWith = { vehicleReq: entity.data.vehicleReq, tier: entity.data.tier };
     entity.dispose(this.scene);
     this.conveyorItems.splice(this.conveyorItems.indexOf(entity), 1);

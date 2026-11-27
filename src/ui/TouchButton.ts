@@ -2,10 +2,10 @@ export class TouchButton {
   private el: HTMLButtonElement;
   private down = false;
 
-  constructor(parent: HTMLElement, label: string, right: number, bottom: number, size: number) {
+  constructor(parent: HTMLElement, label: string, right: number, bottom: number, size: number, fontSize = 16) {
     this.el = document.createElement('button');
     this.el.textContent = label;
-    this.el.style.cssText = `position:fixed;right:${right}px;bottom:${bottom}px;width:${size}px;height:${size}px;border-radius:50%;border:none;background:rgba(255,255,255,0.2);color:#fff;font-size:16px;font-weight:bold;touch-action:none;`;
+    this.el.style.cssText = `position:fixed;right:${right}px;bottom:${bottom}px;width:${size}px;height:${size}px;border-radius:50%;border:none;background:rgba(255,255,255,0.2);color:#fff;font-size:${fontSize}px;font-weight:bold;touch-action:none;`;
     parent.appendChild(this.el);
     this.el.addEventListener('pointerdown', (e) => {
       e.preventDefault();

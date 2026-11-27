@@ -96,7 +96,7 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → LOADED → EXPORTED
 ```
 
 - **RAW:** bẩn 100%, pin 0%
-- **WASHING:** đặt vào bồn, player giữ nút cọ; dirt 100→0 trong 3s giữ
+- **WASHING:** đặt vào bồn, player tap liên hồi để cọ; dirt 100→0 trong ~10 tap (mỗi tap -10%)
 - **CLEAN:** dirt 0
 - **CHARGING:** auto 0→100% trong 8s
 - **CHARGED:** 100%, chuông báo
@@ -109,7 +109,7 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → LOADED → EXPORTED
 | Trạm | Hành vi |
 |---|---|
 | Intake | 3 nút chọn loại xe (Bike/VF5/VF8), spawn, cooldown 2s |
-| Wash | Đặt xe, giữ nút cọ 3s |
+| Wash | Đặt xe, tap liên hồi để cọ (mỗi tap -10% bẩn, ~10 tap sạch) |
 | Charger | Đặt xe, auto 8s, chuông, grace 3s, quá sạc phạt |
 | Băng chuyền | 4 slot, khách/hàng spawn liên tục, trôi về cuối; tràn = hất đơn, -điểm |
 | Export | Đặt xe đã LOADED khớp yêu cầu → điểm + combo; sai → từ chối, xe vẫn đó |
@@ -136,8 +136,14 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → LOADED → EXPORTED
 
 ### 5.6 Điều khiển
 
-- Virtual joystick trái + nút Action phải (context: nhấc/đặt/cọ/gắn) + Dash (2s cooldown)
-- Tap-to-move: tap sàn để đi, tap trạm để tương tác (hỗ trợ song song)
+**Mobile — bố cục hai ngón cái, màn hình ngang, tách nút để tránh bấm nhầm khi cuống:**
+
+- **Nửa trái — Virtual Joystick động:** cần gạt ảo xuất hiện ngay tại điểm chạm ngón tay, điều hướng 360°, biến mất khi nhả. Gạt cần khi đang cọ = ngắt cọ ngay (cọ dạng tap nên tự nhiên).
+- **Góc dưới phải — cụm 3 nút hình vòng cung:**
+  - **CẦM/ĐẶT (to nhất):** nhấc/đặt xe, đưa xe vào/ra trụ sạc V-Green, nhặt khách/hàng, gắn khách/hàng lên xe, đẩy xe hoàn chỉnh vào cổng xuất bến.
+  - **CỌ/THAO TÁC (cỡ vừa, tách riêng):** đứng tay không cạnh bồn rửa, tap liên hồi để đánh bay vết bùn (mỗi tap -10% bẩn, ~10 tap sạch); tiến trình rửa giữ nguyên khi chạy đi giữa chừng. Đang cầm khách/hàng → ném qua làn đường (auto-target xe hợp lệ trong 6m; không có target thì trả về băng chuyền).
+  - **DASH (cỡ nhỏ):** lướt nhanh một đoạn ngắn, hồi chiêu 1.5s, để băng qua làn xe chạy; huých đồng đội (co-op, GĐ 3).
+- Keyboard fallback (desktop dev): WASD/arrows + Space (Cầm/Đặt) + E (Cọ/Thao tác) + Shift (Dash)
 - Landscape bắt buộc; portrait → overlay "xoay ngang máy"
 
 ### 5.7 Modes & Content

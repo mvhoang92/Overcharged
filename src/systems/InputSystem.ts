@@ -3,29 +3,32 @@ import { TouchButton } from '../ui/TouchButton';
 
 export interface InputState {
   move: { x: number; y: number };
-  actionDown: boolean;
+  pickJustPressed: boolean;
   actionJustPressed: boolean;
   dashJustPressed: boolean;
 }
 
 export class InputSystem {
   private joystick: Joystick;
+  private pickBtn: TouchButton;
   private actionBtn: TouchButton;
   private dashBtn: TouchButton;
   private keys = new Set<string>();
+  private prevPick = false;
   private prevAction = false;
   private prevDash = false;
   private current: InputState = {
     move: { x: 0, y: 0 },
-    actionDown: false,
+    pickJustPressed: false,
     actionJustPressed: false,
     dashJustPressed: false,
   };
 
   constructor(uiRoot: HTMLElement) {
     this.joystick = new Joystick(uiRoot);
-    this.actionBtn = new TouchButton(uiRoot, 'A', 24, 40, 88);
-    this.dashBtn = new TouchButton(uiRoot, 'DASH', 130, 110, 64);
+    this.pickBtn = new TouchButton(uiRoot, 'CẦM', 28, 28, 96, 18);
+    this.actionBtn = new TouchButton(uiRoot, 'CỌ', 136, 52, 72, 16);
+    this.dashBtn = new TouchButton(uiRoot, 'DASH', 52, 140, 56, 12);
     window.addEventListener('keydown', (e) => this.keys.add(e.code));
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
   }
@@ -47,13 +50,15 @@ export class InputSystem {
       my /= len;
     }
 
-    const actionDown = this.actionBtn.isDown || this.keys.has('Space');
+    const pickDown = this.pickBtn.isDown || this.keys.has('Space');
+    const actionDown = this.actionBtn.isDown || this.keys.has('KeyE');
     const dashDown = this.dashBtn.isDown || this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
 
     this.current.move = { x: mx, y: my };
-    this.current.actionDown = actionDown;
+    this.current.pickJustPressed = pickDown && !this.prevPick;
     this.current.actionJustPressed = actionDown && !this.prevAction;
     this.current.dashJustPressed = dashDown && !this.prevDash;
+    this.prevPick = pickDown;
     this.prevAction = actionDown;
     this.prevDash = dashDown;
   }

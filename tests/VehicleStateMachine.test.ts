@@ -10,19 +10,19 @@ describe('VehicleStateMachine', () => {
     expect(v.state).toBe('raw');
   });
 
-  it('scrub only works when location is wash', () => {
+  it('scrubTap only works when location is wash', () => {
     const v = new VehicleStateMachine('bike');
-    v.scrub(1);
+    v.scrubTap();
     expect(v.dirt).toBe(100);
     v.location = 'wash';
-    v.scrub(1);
-    expect(v.dirt).toBeLessThan(100);
+    v.scrubTap();
+    expect(v.dirt).toBe(90);
   });
 
-  it('scrub clamps dirt at 0 and becomes clean', () => {
+  it('scrubTap clamps dirt at 0 and becomes clean', () => {
     const v = new VehicleStateMachine('bike');
     v.location = 'wash';
-    v.scrub(10);
+    for (let i = 0; i < 10; i++) v.scrubTap();
     expect(v.dirt).toBe(0);
     expect(v.state).toBe('clean');
   });
@@ -57,7 +57,7 @@ describe('VehicleStateMachine', () => {
   it('canExport requires clean + full battery + loaded', () => {
     const v = new VehicleStateMachine('bike');
     v.location = 'wash';
-    v.scrub(10);
+    for (let i = 0; i < 10; i++) v.scrubTap();
     v.placeOnCharger();
     v.update(10);
     expect(v.canExport).toBe(false);
@@ -69,7 +69,7 @@ describe('VehicleStateMachine', () => {
   it('large dt does not overshoot values', () => {
     const v = new VehicleStateMachine('bike');
     v.location = 'wash';
-    v.scrub(1000);
+    for (let i = 0; i < 20; i++) v.scrubTap();
     expect(v.dirt).toBe(0);
     v.placeOnCharger();
     v.update(1000);

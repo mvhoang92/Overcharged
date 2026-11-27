@@ -1,31 +1,35 @@
 export class Joystick {
-  private el: HTMLDivElement;
+  private base: HTMLDivElement;
   private knob: HTMLDivElement;
   private pointerId: number | null = null;
   private centerX = 0;
   private centerY = 0;
-  private radius = 70;
+  private radius = 60;
   private vec = { x: 0, y: 0 };
 
   constructor(parent: HTMLElement) {
-    this.el = document.createElement('div');
-    this.el.style.cssText =
-      'position:fixed;left:24px;bottom:24px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.12);touch-action:none;';
+    this.base = document.createElement('div');
+    this.base.style.cssText =
+      'position:fixed;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.12);display:none;pointer-events:none;transform:translate(-50%,-50%);z-index:5;';
     this.knob = document.createElement('div');
     this.knob.style.cssText =
-      'position:absolute;left:50%;top:50%;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.35);transform:translate(-50%,-50%);';
-    this.el.appendChild(this.knob);
-    parent.appendChild(this.el);
+      'position:absolute;left:50%;top:50%;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.35);transform:translate(-50%,-50%);';
+    this.base.appendChild(this.knob);
+    parent.appendChild(this.base);
 
-    this.el.addEventListener('pointerdown', (e) => {
+    window.addEventListener('pointerdown', (e) => {
+      if (this.pointerId !== null) return;
+      if (e.clientX > window.innerWidth / 2) return;
+      if ((e.target as HTMLElement).closest('button')) return;
       this.pointerId = e.pointerId;
-      this.el.setPointerCapture(e.pointerId);
-      const rect = this.el.getBoundingClientRect();
-      this.centerX = rect.left + rect.width / 2;
-      this.centerY = rect.top + rect.height / 2;
+      this.centerX = e.clientX;
+      this.centerY = e.clientY;
+      this.base.style.left = `${e.clientX}px`;
+      this.base.style.top = `${e.clientY}px`;
+      this.base.style.display = 'block';
       this.update(e.clientX, e.clientY);
     });
-    this.el.addEventListener('pointermove', (e) => {
+    window.addEventListener('pointermove', (e) => {
       if (e.pointerId !== this.pointerId) return;
       this.update(e.clientX, e.clientY);
     });
@@ -33,10 +37,11 @@ export class Joystick {
       if (e.pointerId !== this.pointerId) return;
       this.pointerId = null;
       this.vec = { x: 0, y: 0 };
+      this.base.style.display = 'none';
       this.knob.style.transform = 'translate(-50%,-50%)';
     };
-    this.el.addEventListener('pointerup', release);
-    this.el.addEventListener('pointercancel', release);
+    window.addEventListener('pointerup', release);
+    window.addEventListener('pointercancel', release);
   }
 
   get vector(): { x: number; y: number } {
