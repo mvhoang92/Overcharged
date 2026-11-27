@@ -1,7 +1,7 @@
 # Overcharged: Trạm Sạc Bão Táp — Design Doc
 
 - **Ngày:** 2026-11-27
-- **Trạng thái:** Draft — chờ duyệt
+- **Trạng thái:** Đã duyệt — MVP-first: backend/co-op/voucher hoãn lại, làm bản chơi được trước
 - **Tác giả:** V-LLM (AI) cùng human partner
 - **Loại:** Project — design doc đầy đủ
 
@@ -210,14 +210,18 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 
 ## 7. Roadmap (8 tuần, solo dev + AI)
 
+**Quyết định MVP-first (2026-11-27):** Giai đoạn hiện tại chỉ làm **MVP = bản chơi được, single-player, không backend, không co-op, không voucher**. Backend/co-op/voucher/marketing để sau khi MVP chạy ổn — scale sau.
+
 | GĐ | Tuần | Nội dung | Milestone |
 |---|---|---|---|
-| 1 | W1-2 | Core loop single-player: 1 map, 1 player, 2 xe, 4 trạm, joystick+action+dash, placeholder art | Link chơi được để playtest |
+| **MVP** | W1-2 | Core loop single-player: 1 map, 1 player, 2 xe, 4 trạm, joystick+action+dash, placeholder art | Link chơi được để playtest |
 | 2 | W3-4 | Phụ kiện, combo 5 sao, quá sạc VFX, chaos, 3 map, 3 xe, SFX, tutorial, VI/EN | Bản single-player đầy đủ |
 | 3 | W5-6 | Supabase (leaderboard/voucher/analytics), Colyseus co-op 2-4, lobby, room link | Co-op chạy được |
 | 4 | W7-8 | Art final + branding, animation, perf, QA thiết bị, OG card, soft launch | Launch |
 
 **Fallback:** co-op trượt deadline → launch single-player cuối W6, co-op bổ sung sau.
+
+**Sau MVP:** mới quyết voucher (giá trị + chống gian lận) và lưu lượng launch (sizing server).
 
 ## 8. Left to the builder / Open questions
 
