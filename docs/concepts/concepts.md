@@ -63,7 +63,19 @@
 
 ## 4. Vật phẩm
 
-### 4.1 Phụ kiện (gắn lên xe)
+### 4.0 Khách/hàng (nguyên liệu chính — thay phụ kiện)
+
+| Thực thể | Hạng | Yêu cầu xe | Bong bóng thoại |
+|---|---|---|---|
+| Khách | Thường | Ô tô / Xe máy | Trắng, icon xe |
+| Khách | VIP | Ô tô / Xe máy | Vàng, icon xe + ngôi sao |
+| Hàng | Thường | Ô tô / Xe máy | Trắng, icon hộp |
+| Hàng | VIP | Ô tô / Xe máy | Vàng, icon hộp + ngôi sao |
+
+- Art cần: 4 sprite/model chibi (khách thường, khách VIP, hàng thường, hàng VIP) + bong bóng thoại 2 icon (ô tô, xe máy)
+- Trôi trên băng chuyền 4 slot; tràn cuối = hất đơn
+
+### 4.1 Phụ kiện (gắn lên xe — GĐ 2+, optional)
 
 | Vật phẩm | Mô tả | Điểm thưởng |
 |---|---|---|

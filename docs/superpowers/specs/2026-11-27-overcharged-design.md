@@ -83,12 +83,14 @@ MVP chưa cần backend; nối ở GĐ 3.
 
 ### 5.1 Core loop
 
-Intake → Wash → Charge → Accessories → Export. Order queue 3-5 đơn. Combo 5 sao.
+**Băng chuyền khách/hàng → Nhặt → Gắn lên xe đã sạch + sạc → Xuất chuyến.**
+
+Xe: Intake → Wash → Charge → LOADED → Export. Khách/hàng trôi trên băng chuyền, tràn = hất đơn. Combo 5 sao.
 
 ### 5.2 State machine của Xe
 
 ```
-RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY → EXPORTED
+RAW → WASHING → CLEAN → CHARGING → CHARGED → LOADED → EXPORTED
                                   ↓ quá 3s sau 100%
                             OVERCHARGED (phạt điểm/s, khói → lửa)
 ```
@@ -99,9 +101,8 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 - **CHARGING:** auto 0→100% trong 8s
 - **CHARGED:** 100%, chuông báo
 - **OVERCHARGED:** sau grace 3s, -5 điểm/s, VFX khói→lửa, rung máy; nhấc xe lên để dừng
-- **ACCESSORIZED:** đủ phụ kiện theo đơn
-- **READY:** sạch + 100% + đủ phụ kiện
-- **EXPORTED:** giao thành công
+- **LOADED:** đã gắn khách/hàng khớp yêu cầu (xe + khách/hàng cùng loại)
+- **EXPORTED:** xuất chuyến thành công
 
 ### 5.3 Trạm
 
@@ -110,17 +111,19 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 | Intake | 3 nút chọn loại xe (Bike/VF5/VF8), spawn, cooldown 2s |
 | Wash | Đặt xe, giữ nút cọ 3s |
 | Charger | Đặt xe, auto 8s, chuông, grace 3s, quá sạc phạt |
-| Accessory | 3 stack phụ kiện; player bưng phụ kiện tới xe, gắn (tối đa 3/xe) |
-| Export | Đặt xe khớp đơn → điểm + combo; sai → từ chối, xe vẫn đó |
+| Băng chuyền | 4 slot, khách/hàng spawn liên tục, trôi về cuối; tràn = hất đơn, -điểm |
+| Export | Đặt xe đã LOADED khớp yêu cầu → điểm + combo; sai → từ chối, xe vẫn đó |
 
 **Phí quá giờ (blocking fee) — GĐ 2:** chỉ áp dụng ở Wash và Charger. Wash: xe nằm >10s không cọ → -2 điểm/s. Charger: quá 3s sau 100% → -5 điểm/s (overcharge).
 
-### 5.4 Đơn hàng & Combo
+### 5.4 Khách/hàng & Combo
 
-- Queue 3-5, mỗi đơn: loại xe + 0-2 phụ kiện + patience 60-90s
-- Đơn mới spawn khi đơn cũ hoàn thành/hết hạn
-- Combo: giao liên tiếp → 1x → 1.5x → 2x → 3x → 5x (5 sao)
-- Hết hạn đơn → combo reset, mất điểm (Campaign) / -1 mạng (Endless)
+- **Băng chuyền 4 slot:** khách/hàng spawn liên tục, trôi từ đầu đến cuối; tràn cuối = hất đơn, -điểm, combo reset
+- **Mỗi thực thể:** loại (Khách / Hàng) + hạng (Thường / VIP) + yêu cầu xe (Ô tô / Xe máy) — hiện trong **bong bóng thoại trên đầu**
+- **Matching:** yêu cầu Ô tô → VF 5 Taxi; yêu cầu Xe máy → Bike
+- **VIP:** điểm x2, patience ngắn hơn, bong bóng vàng
+- **Combo:** xuất chuyến liên tiếp không hất đơn → 1x → 1.5x → 2x → 3x → 5x (5 sao)
+- Hất đơn → combo reset, mất điểm (Campaign) / -1 mạng (Endless)
 
 ### 5.5 Chaos mechanics
 
@@ -138,28 +141,29 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 - **Campaign:** 3 màn (Trạm Quận 1, Trạm Sân Bay, Trạm Cao Tốc), mỗi màn **timer 120-180s**, 3 sao theo điểm
 - **Endless:** sống sót, 3 đơn hết hạn = game over, leaderboard
 - **Co-op:** 2-4 người, cùng modes, room link
-- **Xe:** Bike (nhanh, điểm thấp), VF 5 Taxi (trung bình), VF 8 Luxury (chậm, điểm cao, cần VIP kit)
+- **Xe:** Bike (xe máy), VF 5 Taxi (ô tô), VF 8 Luxury (GĐ 2, ô tô VIP)
+- **Khách/hàng:** 2 loại (Khách, Hàng) × 2 hạng (Thường, VIP) × 2 yêu cầu xe (Ô tô, Xe máy) — bong bóng thoại trên đầu
 - **Nhân vật:** 4 nhân vật playable, **cùng stats — chỉ khác ngoại hình** (giống Overcooked, công bằng cho leaderboard)
 - **Xe hỏng (GĐ 2):** 3 loại — lốp xẹp (bơm), ắc quy yếu (thay), phần mềm lỗi (cập nhật) — cần trạm Repair
-- **Rocket SM (GĐ 2):** đơn huyền thoại ~10%/màn, patience 30s, full service + 3 phụ kiện, điểm 2000, quá sạc = nổ -500
+- **Rocket SM (GĐ 2):** đơn huyền thoại ~10%/màn, patience 30s, full service + khách VIP, điểm 2000, quá sạc = nổ -500
 - **Bus (GĐ 3):** xe buýt điện VinBus, bưng 2 người hoặc 1 người chậm 40%, cần Trụ Sạc Nhanh, điểm 800
-- **Cao điểm (GĐ 2):** 2-3 cửa sổ/màn, đơn spawn nhanh hơn, điểm x1.5, patience drain x1.5
-- **Phụ kiện:** Mũ bảo hiểm, Thùng hàng Express, Nước & Khăn VIP
+- **Cao điểm (GĐ 2):** 2-3 cửa sổ/màn, khách/hàng spawn nhanh hơn, điểm x1.5, patience drain x1.5
+- **Phụ kiện (GĐ 2+, optional):** Mũ bảo hiểm, Thùng hàng Express, Nước & Khăn VIP — gắn thêm lên xe để thưởng điểm
 - **Map:** single-screen arena, trạm quanh viền, lane giao thông ở giữa
 
 ### 5.8 Layout màn hình (text sketch)
 
 ```
 ┌──────────────────────────────────────────────┐
-│ [Đơn: 🚲 🚗 🚙]      ⭐ Combo x3      💰 1250 │
+│ [Khách/hàng: 🚗🚲]     ⭐ Combo x3     💰 1250 │
 │                                              │
 │ ┌──────┐                          ┌───────┐  │
 │ │INTAKE│                          │EXPORT │  │
 │ └──────┘                          └───────┘  │
 │ ┌──────┐  ┌────────┐  ┌────────┐  ┌───────┐  │
-│ │ WASH │  │CHARGER │  │CHARGER │  │ACCES. │  │
-│ └──────┘  └────────┘  └────────┘  └───────┘  │
-│        🏍️ ← lane giao thông → 🏍️            │
+│ │ WASH │  │CHARGER │  │CHARGER │  │BĂNG   │  │
+│ └──────┘  └────────┘  └────────┘  │CHUYỀN │  │
+│        🏍️ ← lane giao thông → 🏍️  └───────┘  │
 │                                              │
 │   (Joystick)                      [A] [Dash] │
 └──────────────────────────────────────────────┘
@@ -236,10 +240,10 @@ RAW → WASHING → CLEAN → CHARGING → CHARGED → ACCESSORIZED → READY �
 
 | GĐ | Tuần | Nội dung | Milestone |
 |---|---|---|---|
-| **MVP** | W1-3 | Core loop single-player 3D: 1 map, 1 player (capsule placeholder), 2 xe, 4 trạm, joystick+action+dash, camera 3/4 | Link chơi được để playtest |
-| 2 | W4-6 | Phụ kiện, combo 5 sao, quá sạc VFX, chaos, cao điểm + phí quá giờ, xe hỏng + Repair, Rocket SM, 3 map, 3 xe, SFX, tutorial, VI/EN | Bản single-player đầy đủ |
-| 3 | W7-9 | Supabase (leaderboard/voucher/analytics), Colyseus co-op 2-4, lobby, room link, Bus + Trụ Sạc Nhanh | Co-op chạy được |
-| 4 | W10-12 | Model 3D final + rig + animation (Mixamo), branding, perf, QA thiết bị, OG card, soft launch | Launch |
+| **MVP+** | W1-5 | Core loop single-player 3D: 1 map, 1 player (capsule placeholder), 2 xe, 5 trạm (Intake/Wash/Charger/Băng chuyền/Export), khách/hàng + bong bóng thoại, combo 5 sao, kẹt xe NPC, joystick+action+dash, camera 3/4 | Link chơi được để playtest |
+| 2 | W6-8 | Quá sạc VFX, cao điểm + phí quá giờ, xe hỏng + Repair, Rocket SM, phụ kiện optional, 3 map, 3 xe, SFX, tutorial, VI/EN | Bản single-player đầy đủ |
+| 3 | W9-11 | Supabase (leaderboard/voucher/analytics), Colyseus co-op 2-4, lobby, room link, Bus + Trụ Sạc Nhanh | Co-op chạy được |
+| 4 | W12-14 | Model 3D final + rig + animation (Mixamo), branding, perf, QA thiết bị, OG card, soft launch | Launch |
 
 **Fallback:** co-op trượt deadline → launch single-player cuối W9, co-op bổ sung sau. Perf 3D fail trên Android tầm trung → pre-render sprite 2D, quay về Phaser.
 
