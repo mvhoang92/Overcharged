@@ -10,11 +10,26 @@
       #game { position: fixed; inset: 0; }
       #ui { position: fixed; inset: 0; pointer-events: none; font-family: sans-serif; }
       #ui > * { pointer-events: auto; }
+      #rotate {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: #111;
+        color: #fff;
+        font: 20px sans-serif;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+      }
+      @media (orientation: portrait) {
+        #rotate { display: flex; }
+      }
     </style>
   </head>
   <body>
     <div id="game"></div>
     <div id="ui"></div>
+    <div id="rotate">Xoay ngang máy để chơi</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
